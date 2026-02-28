@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Joy · Lịch sử hội thoại</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; }
+      .admin-header {
+        background: linear-gradient(135deg, #2c5cff, #7b5cff);
+        color: #fff;
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 18px;
+      }
+      .admin-layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+      .sidebar {
+        width: 320px;
+        min-width: 280px;
+        background: #fff;
+        border-right: 1px solid #e5e7eb;
+        overflow-y: auto;
+        padding: 12px;
+      }
+      .sidebar h2 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 600;
+      }
+      .session-item {
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #f9fafb;
+        border: 1px solid transparent;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .session-item:hover {
+        background: #eff6ff;
+        border-color: #93c5fd;
+      }
+      .session-item.active {
+        background: #dbeafe;
+        border-color: #2c5cff;
+      }
+      .session-item .label {
+        font-weight: 500;
+        color: #111;
+        margin-bottom: 2px;
+      }
+      .session-item .meta {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f5f5f7;
+      }
+      .content-placeholder {
+        color: #6b7280;
+        text-align: center;
+        padding: 40px 20px;
+        font-size: 15px;
+      }
+      .conversation {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .conversation-header {
+        background: #fff;
+        padding: 12px 16px;
+        border-radius: 10px 10px 0 0;
+        border: 1px solid #e5e7eb;
+        border-bottom: none;
+        font-weight: 600;
+        color: #374151;
+      }
+      .conversation-header .meta { font-size: 12px; font-weight: normal; color: #6b7280; margin-top: 4px; }
+      .message-list {
+        list-style: none;
+        margin: 0;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0 0 10px 10px;
+      }
+      .message-list li {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        max-width: 85%;
+      }
+      .message-list li.user {
+        margin-left: 0;
+        margin-right: auto;
+        background: #e3f2fd;
+      }
+      .message-list li.model {
+        margin-left: auto;
+        margin-right: 0;
+        background: #e8f5e9;
+      }
+      .message-list .msg-meta {
+        font-size: 11px;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+      .message-list .msg-body {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .loading { color: #6b7280; padding: 20px; }
+      .error { color: #dc2626; padding: 20px; background: #fef2f2; border-radius: 8px; margin: 20px; }
+    </style>
+  </head>
+  <body>
+    <div class="admin-header">Joy · Lịch sử hội thoại</div>
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <h2>Danh sách phiên chat</h2>
+        <div id="session-list"></div>
+      </aside>
+      <main class="content">
+        <div id="content-area">
+          <div class="content-placeholder">Chọn một phiên bên trái để xem nội dung.</div>
+        </div>
+      </main>
+    </div>
+    <script>
+      (function () {
+        const params = new URLSearchParams(location.search);
+        const key = params.get("key") || "";
+        if (!key) {
+          document.getElementById("session-list").innerHTML =
+            '<p class="error">Thiếu key. Thêm <code>?key=joy_admin_2024</code> vào URL.</p>';
+          return;
+        }
+
+        const listEl = document.getElementById("session-list");
+        const contentEl = document.getElementById("content-area");
+
+        function escape(s) {
+          const d = document.createElement("div");
+          d.textContent = s;
+          return d.innerHTML;
+        }
+
+        function renderSessionList(sessions) {
+          if (!sessions.length) {
+            listEl.innerHTML = '<p class="loading">Chưa có phiên nào.</p>';
+            return;
+          }
+          listEl.innerHTML = sessions
+            .map(
+              (s, i) =>
+                `<div class="session-item" data-index="${i}" role="button" tabindex="0">
+                  <div class="label">${escape(s.label)}</div>
+                  <div class="meta">${escape(s.session_id.slice(0, 12))}… · ${s.message_count} tin</div>
+                </div>`
+            )
+            .join("");
+
+          listEl.querySelectorAll(".session-item").forEach((el) => {
+            el.addEventListener("click", () => selectSession(parseInt(el.dataset.index, 10)));
+          });
+        }
+
+        function renderConversation(session) {
+          const timeFmt = (t) => (t ? new Date(t).toLocaleString("vi-VN") : "");
+          contentEl.innerHTML = `
+            <div class="conversation">
+              <div class="conversation-header">
+                ${escape(session.label)}
+                <div class="meta">ID: ${escape(session.session_id)} · ${session.message_count} tin nhắn</div>
+              </div>
+              <ul class="message-list">
+                ${(session.messages || [])
+                  .map(
+                    (m) =>
+                      `<li class="${m.role === "user" ? "user" : "model"}">
+                        <div class="msg-meta">${m.role === "user" ? "User" : "Joy"} · ${timeFmt(m.created_at)}</div>
+                        <div class="msg-body">${escape(m.content || "").replace(/\n/g, "<br>")}</div>
+                      </li>`
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          `;
+        }
+
+        function selectSession(index) {
+          listEl.querySelectorAll(".session-item").forEach((el) => el.classList.remove("active"));
+          const el = listEl.querySelector(`[data-index="${index}"]`);
+          if (el) el.classList.add("active");
+          if (window._adminSessions && window._adminSessions[index]) {
+            renderConversation(window._adminSessions[index]);
+          }
+        }
+
+        fetch("/api/admin/sessions?key=" + encodeURIComponent(key))
+          .then((r) => {
+            if (!r.ok) throw new Error(r.status === 401 ? "Sai key. Kiểm tra ADMIN_SECRET trong .env" : "Lỗi " + r.status);
+            return r.json();
+          })
+          .then((data) => {
+            if (data.error) throw new Error(data.error);
+            window._adminSessions = data.sessions || [];
+            renderSessionList(window._adminSessions);
+            if (window._adminSessions.length > 0) {
+              selectSession(0);
+            }
+          })
+          .catch((err) => {
+            listEl.innerHTML = "";
+            contentEl.innerHTML = '<p class="error">' + escape(err.message) + "</p>";
+          });
+      })();
+    </script>
+  </body>
+</html>

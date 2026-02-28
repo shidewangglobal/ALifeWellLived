@@ -2,10 +2,58 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { google } = require("googleapis");
+const { createClient } = require("@supabase/supabase-js");
+
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").trim();
+const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+const ADMIN_SECRET = (process.env.ADMIN_SECRET || "").trim();
+const CHAT_MESSAGES_TABLE = "chat_messages";
+const CHAT_SESSIONS_TABLE = "chat_sessions";
+
+function getSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function saveChatMessages(sessionId, userMessage, modelReply, userInfo = null) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    console.error("[Joy] Supabase KHÔNG được cấu hình. Kiểm tra SUPABASE_URL và SUPABASE_SERVICE_ROLE_KEY trong .env");
+    return;
+  }
+  try {
+    const { error } = await supabase.from(CHAT_MESSAGES_TABLE).insert([
+      { session_id: sessionId, role: "user", content: userMessage },
+      { session_id: sessionId, role: "model", content: modelReply },
+    ]);
+    if (error) {
+      console.error("[Joy] Lỗi lưu Supabase:", error.message, error.details || "");
+      return;
+    }
+    console.log("[Joy] Đã lưu 2 tin (user + Joy) cho session:", sessionId.slice(0, 8) + "...");
+    if (userInfo && (userInfo.user_name || userInfo.user_contact)) {
+      const { error: sessionError } = await supabase.from(CHAT_SESSIONS_TABLE).upsert(
+        {
+          session_id: sessionId,
+          user_name: userInfo.user_name || null,
+          user_contact: userInfo.user_contact || null,
+          last_seen: new Date().toISOString(),
+        },
+        { onConflict: "session_id" }
+      );
+      if (sessionError) {
+        console.error("[Joy] Lỗi lưu tên/SĐT vào chat_sessions:", sessionError.message, "- Bạn đã tạo bảng chat_sessions trong Supabase chưa? Xem SUPABASE_SETUP.md");
+      }
+    }
+  } catch (e) {
+    console.error("Supabase save chat exception:", e?.message);
+  }
+}
 
 const JOY_RULE_DOC_ID = process.env.JOY_RULE_DOC_ID || "";
 // Optional: comma-separated Google Doc IDs (used if Drive folder not set)
@@ -163,7 +211,21 @@ function getDriveClient() {
   let key;
   if (GOOGLE_APPLICATION_CREDENTIALS_JSON && GOOGLE_APPLICATION_CREDENTIALS_JSON.trim()) {
     try {
-      key = JSON.parse(GOOGLE_APPLICATION_CREDENTIALS_JSON.trim());
+      let raw = GOOGLE_APPLICATION_CREDENTIALS_JSON.trim();
+      try {
+        key = JSON.parse(raw);
+      } catch (e1) {
+        try {
+          const decoded = Buffer.from(raw, "base64").toString("utf8");
+          if (decoded.startsWith("{")) {
+            key = JSON.parse(decoded);
+          } else {
+            throw e1;
+          }
+        } catch (e2) {
+          throw e1;
+        }
+      }
     } catch (e) {
       console.warn("GOOGLE_APPLICATION_CREDENTIALS_JSON invalid:", e?.message);
       return null;
@@ -336,8 +398,11 @@ async function getJoyKnowledgeText() {
   return cachedKnowledgeText;
 }
 
+// Số cặp user+model tối đa gửi cho Gemini (tránh vượt giới hạn token)
+const MAX_HISTORY_TURNS = 25;
+
 // --- Joy response generation (shared by website + WhatsApp) ---
-async function generateJoyReply({ message, history = [] }) {
+async function generateJoyReply({ message, history = [], sessionSummary = null }) {
   const modelName = await getModelName();
   if (!modelName) {
     throw new Error(
@@ -370,22 +435,30 @@ async function generateJoyReply({ message, history = [] }) {
       knowledgeText;
   }
 
+  if (sessionSummary && sessionSummary.trim()) {
+    systemInstruction +=
+      "\n\n---\nTÓM TẮT CUỘC HỘI THOẠI TRƯỚC ĐÓ (dùng làm ngữ cảnh):\n" +
+      sessionSummary.trim();
+  }
+  systemInstruction +=
+    "\n\n---\nNếu chỉ nhận phần cuối cuộc hội thoại, hãy trả lời dựa trên ngữ cảnh đó và tóm tắt nếu có.";
+
   const model = genAI.getGenerativeModel({
     model: modelName,
     systemInstruction,
   });
 
-  const chatHistory = Array.isArray(history)
-    ? history
-        .map((turn) => {
-          if (!turn || typeof turn !== "object") return null;
-          const { role, text } = turn;
-          if (role !== "user" && role !== "model") return null;
-          if (!text || typeof text !== "string") return null;
-          return { role, parts: [{ text }] };
-        })
-        .filter(Boolean)
-    : [];
+  const maxMessages = MAX_HISTORY_TURNS * 2;
+  const recentHistory = Array.isArray(history) ? history.slice(-maxMessages) : [];
+  const chatHistory = recentHistory
+    .map((turn) => {
+      if (!turn || typeof turn !== "object") return null;
+      const { role, text } = turn;
+      if (role !== "user" && role !== "model") return null;
+      if (!text || typeof text !== "string") return null;
+      return { role, parts: [{ text }] };
+    })
+    .filter(Boolean);
 
   const chat = model.startChat({ history: chatHistory });
   const result = await chat.sendMessage(message);
@@ -397,7 +470,7 @@ async function generateJoyReply({ message, history = [] }) {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, history = [] } = req.body || {};
+    const { message, history = [], session_id: clientSessionId, user_name, user_contact } = req.body || {};
 
     if (!message || typeof message !== "string") {
       return res
@@ -405,8 +478,35 @@ app.post("/api/chat", async (req, res) => {
         .json({ error: "Missing 'message' string in body." });
     }
 
-    const reply = await generateJoyReply({ message, history });
-    return res.json({ reply });
+    const sessionId =
+      clientSessionId && typeof clientSessionId === "string"
+        ? clientSessionId.trim()
+        : crypto.randomUUID();
+
+    console.log("[Joy] Nhận tin nhắn, session:", sessionId.slice(0, 8) + "...");
+
+    let sessionSummary = null;
+    if (history.length > MAX_HISTORY_TURNS * 2) {
+      try {
+        const supabase = getSupabase();
+        if (supabase) {
+          const { data: row } = await supabase
+            .from(CHAT_SESSIONS_TABLE)
+            .select("conversation_summary")
+            .eq("session_id", sessionId)
+            .single();
+          if (row?.conversation_summary) sessionSummary = row.conversation_summary;
+        }
+      } catch (_) {}
+    }
+
+    const reply = await generateJoyReply({ message, history, sessionSummary });
+    const userInfo =
+      user_name || user_contact
+        ? { user_name: typeof user_name === "string" ? user_name.trim() : null, user_contact: typeof user_contact === "string" ? user_contact.trim() : null }
+        : null;
+    await saveChatMessages(sessionId, message, reply, userInfo);
+    return res.json({ reply, session_id: sessionId });
   } catch (err) {
     console.error("Error in /api/chat:", err);
     return res.status(500).json({
@@ -510,6 +610,34 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+// Lấy lịch sử hội thoại theo session_id (để restore khi refresh trang)
+app.get("/api/history", async (req, res) => {
+  const sessionId = (req.query.session_id || "").trim();
+  if (!sessionId) {
+    return res.json({ messages: [] });
+  }
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.json({ messages: [] });
+  }
+  try {
+    const { data: rows, error } = await supabase
+      .from(CHAT_MESSAGES_TABLE)
+      .select("role, content")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.warn("API history error:", error.message);
+      return res.json({ messages: [] });
+    }
+    const messages = (rows || []).map((r) => ({ role: r.role, text: r.content || "" }));
+    return res.json({ messages });
+  } catch (e) {
+    console.warn("API history:", e?.message);
+    return res.json({ messages: [] });
+  }
+});
+
 // Debug endpoint: show current Joy rules (for verification)
 app.get("/api/rules", async (req, res) => {
   try {
@@ -564,31 +692,205 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
+// Kiểm tra nhanh Supabase + bảng chat_messages (để debug khi admin trống)
+app.get("/api/debug-supabase", async (req, res) => {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.json({
+      ok: false,
+      error: "Supabase chưa cấu hình (thiếu SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY trong .env)",
+    });
+  }
+  try {
+    const { count, error } = await supabase.from(CHAT_MESSAGES_TABLE).select("*", { count: "exact", head: true });
+    if (error) {
+      return res.json({
+        ok: false,
+        error: error.message,
+        hint: "Có thể bảng 'chat_messages' chưa được tạo trong Supabase. Xem SUPABASE_SETUP.md",
+      });
+    }
+    return res.json({ ok: true, messageCount: count ?? 0 });
+  } catch (e) {
+    return res.json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// --- Admin: API trả JSON danh sách phiên + tin nhắn (dùng cho trang admin) ---
+async function getAdminSessionsData() {
+  const supabase = getSupabase();
+  if (!supabase) return { error: "Supabase not configured" };
+  const { data: rows, error } = await supabase
+    .from(CHAT_MESSAGES_TABLE)
+    .select("id, session_id, role, content, created_at")
+    .order("created_at", { ascending: true });
+  if (error) return { error: error.message };
+  const bySession = new Map();
+  for (const r of rows || []) {
+    const sid = r.session_id || "unknown";
+    if (!bySession.has(sid)) bySession.set(sid, []);
+    bySession.get(sid).push(r);
+  }
+  const sessionIds = [...bySession.keys()];
+  let sessionInfoMap = new Map();
+  if (sessionIds.length > 0) {
+    try {
+      const { data: sessionRows } = await supabase
+        .from(CHAT_SESSIONS_TABLE)
+        .select("session_id, user_name, user_contact")
+        .in("session_id", sessionIds);
+      for (const s of sessionRows || []) {
+        sessionInfoMap.set(s.session_id, { user_name: s.user_name, user_contact: s.user_contact });
+      }
+    } catch (_) {}
+  }
+  const sessions = Array.from(bySession.entries())
+    .map(([sid, messages]) => {
+      const info = sessionInfoMap.get(sid) || {};
+      const who = [info.user_name, info.user_contact].filter(Boolean).join(" · ") || "Chưa đặt tên";
+      const last = messages.length ? messages[messages.length - 1] : null;
+      const lastAt = last?.created_at || "";
+      return {
+        session_id: sid,
+        user_name: info.user_name,
+        user_contact: info.user_contact,
+        label: who,
+        message_count: messages.length,
+        last_at: lastAt,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          created_at: m.created_at,
+        })),
+      };
+    })
+    .sort((a, b) => new Date(b.last_at || 0) - new Date(a.last_at || 0));
+  return { sessions };
+}
+
+// Tạo/cập nhật tóm tắt cuộc hội thoại (để Joy "nhớ" lâu dài khi hội thoại quá dài)
+async function generateAndSaveSessionSummary(sessionId) {
+  const supabase = getSupabase();
+  if (!supabase) return { error: "Supabase not configured" };
+  const { data: rows, error } = await supabase
+    .from(CHAT_MESSAGES_TABLE)
+    .select("role, content, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error || !rows || rows.length < 4) return { error: error?.message || "Ít tin nhắn" };
+  const modelName = await getModelName();
+  if (!modelName) return { error: "No Gemini model" };
+  const convText = rows
+    .map((m) => `${m.role === "user" ? "User" : "Joy"}: ${(m.content || "").slice(0, 500)}`)
+    .join("\n");
+  const model = genAI.getGenerativeModel({ model: modelName });
+  const prompt = `Tóm tắt ngắn gọn (2-4 câu, tiếng Việt) nội dung cuộc hội thoại sau, nêu ý chính người dùng quan tâm và các thông tin đã trao đổi:\n\n${convText.slice(-8000)}`;
+  try {
+    const result = await model.generateContent(prompt);
+    const summary = result?.response?.text?.()?.trim() || "";
+    if (!summary) return { error: "Không tạo được tóm tắt" };
+    const { data: updated } = await supabase
+      .from(CHAT_SESSIONS_TABLE)
+      .update({ conversation_summary: summary, last_seen: new Date().toISOString() })
+      .eq("session_id", sessionId)
+      .select();
+    if (updated && updated.length > 0) return { summary };
+    await supabase.from(CHAT_SESSIONS_TABLE).insert({
+      session_id: sessionId,
+      conversation_summary: summary,
+      last_seen: new Date().toISOString(),
+    });
+    return { summary };
+  } catch (e) {
+    return { error: String(e?.message || e) };
+  }
+}
+
+function checkAdminKey(req) {
+  const key = (req.query.key || "").trim();
+  if (!ADMIN_SECRET) return { ok: false, status: 500, message: "ADMIN_SECRET chưa cấu hình trong .env" };
+  if (key !== ADMIN_SECRET) return { ok: false, status: 401, message: "Unauthorized" };
+  return { ok: true };
+}
+
+app.get("/api/admin/sessions", async (req, res) => {
+  const auth = checkAdminKey(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.message });
+  }
+  try {
+    const data = await getAdminSessionsData();
+    if (data.error) return res.status(500).json({ error: data.error });
+    return res.json(data);
+  } catch (e) {
+    console.error("Admin API error:", e);
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
+});
+
+// Tạo tóm tắt cho một phiên (gọi thủ công hoặc cron) → Joy dùng tóm tắt này khi hội thoại dài
+app.post("/api/admin/summarize-session", async (req, res) => {
+  const auth = checkAdminKey(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.message });
+  }
+  const sessionId = (req.query.session_id || req.body?.session_id || "").trim();
+  if (!sessionId) {
+    return res.status(400).json({ error: "Thiếu session_id" });
+  }
+  try {
+    const result = await generateAndSaveSessionSummary(sessionId);
+    if (result.error) return res.status(400).json({ error: result.error });
+    return res.json({ ok: true, summary: result.summary });
+  } catch (e) {
+    console.error("Summarize error:", e);
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
+});
+
+// --- Admin: trang HTML (sidebar trái + nội dung phải) ---
+app.get("/admin", async (req, res) => {
+  const auth = checkAdminKey(req);
+  if (!auth.ok) {
+    if (auth.status === 500) {
+      return res.status(500).send(
+        "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Admin</title></head><body><p>ADMIN_SECRET chưa được cấu hình trong file .env.</p></body></html>"
+      );
+    }
+    const baseUrl = `${req.protocol}://${req.get("host") || "localhost:" + PORT}`;
+    return res.status(401).send(
+      "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Admin</title></head><body><p><strong>Unauthorized.</strong> Dùng URL: <a href='" +
+        baseUrl +
+        "/admin?key=joy_admin_2024'>" +
+        baseUrl +
+        "/admin?key=joy_admin_2024</a></p></body></html>"
+    );
+  }
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
 // Serve main page for root path
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-(async function start() {
-  console.log("Preloading rules + knowledge + model (first message will be fast)...");
-  try {
-    await Promise.all([
-      getJoyRulesText().catch((e) => {
-        console.warn("Rules preload:", e?.message || e);
-      }),
-      getJoyKnowledgeText().catch((e) => {
-        console.warn("Knowledge preload:", e?.message || e);
-      }),
-      getModelName().catch((e) => {
-        console.warn("Model preload:", e?.message || e);
-      }),
-    ]);
-    console.log("Preload done.");
-  } catch (e) {
-    console.warn("Preload warning:", e?.message || e);
-  }
-  app.listen(PORT, () => {
-    console.log(`Joy server is running on http://localhost:${PORT}`);
-  });
-})();
+// Khởi động server ngay, preload chạy nền → không phải đợi mỗi lần restart
+app.listen(PORT, () => {
+  console.log(`Joy server is running on http://localhost:${PORT}`);
+  console.log("Preloading rules + knowledge + model in background...");
+  Promise.all([
+    getJoyRulesText().catch((e) => {
+      console.warn("Rules preload:", e?.message || e);
+    }),
+    getJoyKnowledgeText().catch((e) => {
+      console.warn("Knowledge preload:", e?.message || e);
+    }),
+    getModelName().catch((e) => {
+      console.warn("Model preload:", e?.message || e);
+    }),
+  ]).then(
+    () => console.log("Preload done. First message may be fast."),
+    (e) => console.warn("Preload warning:", e?.message || e)
+  );
+});
 
