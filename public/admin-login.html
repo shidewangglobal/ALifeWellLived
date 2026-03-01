@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng nhập Admin · Joy</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 50%, #f3e8ff 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .login-box {
+        width: 100%;
+        max-width: 360px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px 28px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      }
+      .login-box h1 {
+        margin: 0 0 8px 0;
+        font-size: 22px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .login-box p {
+        margin: 0 0 24px 0;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .login-box label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+      .login-box input {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+      .login-box input:focus {
+        outline: none;
+        border-color: #5b21b6;
+        box-shadow: 0 0 0 2px rgba(91,33,182,0.15);
+      }
+      .login-box button {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        background: #5b21b6;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .login-box button:hover {
+        background: #4c1d95;
+      }
+      .login-box .back {
+        display: block;
+        margin-top: 16px;
+        font-size: 13px;
+        color: #6b7280;
+        text-align: center;
+      }
+      .login-box .back a { color: #5b21b6; }
+      .error-msg {
+        font-size: 13px;
+        color: #dc2626;
+        margin-bottom: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-box">
+      <h1>Đăng nhập Admin</h1>
+      <p>Joy · A Life Well Lived — Quản lý lịch sử hội thoại</p>
+      <form method="post" action="/admin/login" id="loginForm">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu admin" required autofocus />
+        <div id="error" class="error-msg" style="display: none;"></div>
+        <button type="submit">Đăng nhập</button>
+      </form>
+      <a href="/" class="back">← Về trang chủ Joy</a>
+    </div>
+    <script>
+      (function () {
+        const params = new URLSearchParams(location.search);
+        if (params.get("error") === "1") {
+          document.getElementById("error").textContent = "Sai mật khẩu. Vui lòng thử lại.";
+          document.getElementById("error").style.display = "block";
+        }
+      })();
+    </script>
+  </body>
+</html>

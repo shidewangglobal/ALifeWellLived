@@ -5,6 +5,14 @@ const fs = require("fs");
 const crypto = require("crypto");
 require("dotenv").config();
 
+// Giữ process không thoát khi có lỗi chưa bắt (để server không tự tắt, nhảy về prompt)
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException] Server vẫn chạy. Lỗi:", err?.message || err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[unhandledRejection] Server vẫn chạy. Lỗi:", reason);
+});
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { google } = require("googleapis");
 const { createClient } = require("@supabase/supabase-js");
@@ -82,8 +90,9 @@ If the information is not covered there, you may use your general knowledge, but
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 if (!process.env.GEMINI_API_KEY) {
@@ -717,7 +726,7 @@ app.get("/api/debug-supabase", async (req, res) => {
 });
 
 // --- Admin: API trả JSON danh sách phiên + tin nhắn (dùng cho trang admin) ---
-async function getAdminSessionsData() {
+async function getAdminSessionsData(searchTerm) {
   const supabase = getSupabase();
   if (!supabase) return { error: "Supabase not configured" };
   const { data: rows, error } = await supabase
@@ -735,16 +744,22 @@ async function getAdminSessionsData() {
   let sessionInfoMap = new Map();
   if (sessionIds.length > 0) {
     try {
-      const { data: sessionRows } = await supabase
+      const { data: sessionRows, error: sessionErr } = await supabase
         .from(CHAT_SESSIONS_TABLE)
         .select("session_id, user_name, user_contact")
         .in("session_id", sessionIds);
-      for (const s of sessionRows || []) {
-        sessionInfoMap.set(s.session_id, { user_name: s.user_name, user_contact: s.user_contact });
+      if (sessionErr) {
+        console.warn("[Admin] Không lấy được thông tin session (bảng chat_sessions?):", sessionErr.message);
+      } else {
+        for (const s of sessionRows || []) {
+          sessionInfoMap.set(s.session_id, { user_name: s.user_name, user_contact: s.user_contact });
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      console.warn("[Admin] Lỗi khi query chat_sessions:", e?.message || e);
+    }
   }
-  const sessions = Array.from(bySession.entries())
+  let sessions = Array.from(bySession.entries())
     .map(([sid, messages]) => {
       const info = sessionInfoMap.get(sid) || {};
       const who = [info.user_name, info.user_contact].filter(Boolean).join(" · ") || "Chưa đặt tên";
@@ -765,6 +780,15 @@ async function getAdminSessionsData() {
       };
     })
     .sort((a, b) => new Date(b.last_at || 0) - new Date(a.last_at || 0));
+  if (searchTerm && typeof searchTerm === "string" && searchTerm.trim()) {
+    const term = searchTerm.trim().toLowerCase();
+    sessions = sessions.filter(
+      (s) =>
+        (s.user_name && s.user_name.toLowerCase().includes(term)) ||
+        (s.user_contact && s.user_contact.toLowerCase().includes(term)) ||
+        (s.label && s.label.toLowerCase().includes(term))
+    );
+  }
   return { sessions };
 }
 
@@ -806,11 +830,59 @@ async function generateAndSaveSessionSummary(sessionId) {
   }
 }
 
-function checkAdminKey(req) {
+// --- Admin đăng nhập bằng cookie (sau khi nhập mật khẩu ở /admin/login) ---
+const ADMIN_COOKIE_NAME = "joy_admin";
+const ADMIN_COOKIE_MAX_AGE_DAYS = 7;
+
+function getCookie(req, name) {
+  const raw = req.headers.cookie;
+  if (!raw) return null;
+  const m = raw.match(new RegExp("\\b" + name + "=([^;]+)"));
+  return m ? decodeURIComponent(m[1].trim()) : null;
+}
+
+function createAdminToken() {
+  const exp = Date.now() + ADMIN_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const payload = exp.toString(36);
+  const sig = crypto.createHmac("sha256", ADMIN_SECRET || "joy").update(payload).digest("hex").slice(0, 32);
+  return payload + "." + sig;
+}
+
+function verifyAdminToken(token) {
+  if (!token || !ADMIN_SECRET) return false;
+  const i = token.indexOf(".");
+  if (i === -1) return false;
+  const payload = token.slice(0, i);
+  const sig = token.slice(i + 1);
+  const exp = parseInt(payload, 36);
+  if (Number.isNaN(exp) || exp < Date.now()) return false;
+  const expected = crypto.createHmac("sha256", ADMIN_SECRET).update(payload).digest("hex").slice(0, 32);
+  return sig === expected;
+}
+
+function isAdminAuthenticated(req) {
+  const token = getCookie(req, ADMIN_COOKIE_NAME);
+  if (verifyAdminToken(token)) return true;
   const key = (req.query.key || "").trim();
+  return key === ADMIN_SECRET;
+}
+
+function checkAdminKey(req) {
   if (!ADMIN_SECRET) return { ok: false, status: 500, message: "ADMIN_SECRET chưa cấu hình trong .env" };
-  if (key !== ADMIN_SECRET) return { ok: false, status: 401, message: "Unauthorized" };
-  return { ok: true };
+  if (isAdminAuthenticated(req)) return { ok: true };
+  return { ok: false, status: 401, message: "Unauthorized" };
+}
+
+function setAdminCookie(res, token) {
+  const maxAge = ADMIN_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+  const secure = process.env.NODE_ENV === "production";
+  let v = ADMIN_COOKIE_NAME + "=" + encodeURIComponent(token) + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=" + maxAge;
+  if (secure) v += "; Secure";
+  res.setHeader("Set-Cookie", v);
+}
+
+function clearAdminCookie(res) {
+  res.setHeader("Set-Cookie", ADMIN_COOKIE_NAME + "=; Path=/; HttpOnly; Max-Age=0");
 }
 
 app.get("/api/admin/sessions", async (req, res) => {
@@ -819,7 +891,8 @@ app.get("/api/admin/sessions", async (req, res) => {
     return res.status(auth.status).json({ error: auth.message });
   }
   try {
-    const data = await getAdminSessionsData();
+    const search = (req.query.search || req.query.contact || "").trim();
+    const data = await getAdminSessionsData(search || null);
     if (data.error) return res.status(500).json({ error: data.error });
     return res.json(data);
   } catch (e) {
@@ -848,23 +921,47 @@ app.post("/api/admin/summarize-session", async (req, res) => {
   }
 });
 
-// --- Admin: trang HTML (sidebar trái + nội dung phải) ---
-app.get("/admin", async (req, res) => {
-  const auth = checkAdminKey(req);
-  if (!auth.ok) {
-    if (auth.status === 500) {
-      return res.status(500).send(
-        "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Admin</title></head><body><p>ADMIN_SECRET chưa được cấu hình trong file .env.</p></body></html>"
-      );
-    }
-    const baseUrl = `${req.protocol}://${req.get("host") || "localhost:" + PORT}`;
-    return res.status(401).send(
-      "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Admin</title></head><body><p><strong>Unauthorized.</strong> Dùng URL: <a href='" +
-        baseUrl +
-        "/admin?key=joy_admin_2024'>" +
-        baseUrl +
-        "/admin?key=joy_admin_2024</a></p></body></html>"
+// --- Admin: đăng nhập (trang + API) ---
+app.get("/admin/login", (req, res) => {
+  if (isAdminAuthenticated(req)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "public", "admin-login.html"));
+});
+
+app.post("/admin/login", (req, res) => {
+  if (!ADMIN_SECRET) {
+    return res.status(500).send("ADMIN_SECRET chưa cấu hình.");
+  }
+  const password = (req.body && req.body.password) || "";
+  if (password.trim() !== ADMIN_SECRET) {
+    return res.redirect(302, "/admin/login?error=1");
+  }
+  const token = createAdminToken();
+  setAdminCookie(res, token);
+  res.redirect(302, "/admin");
+});
+
+app.get("/admin/logout", (req, res) => {
+  clearAdminCookie(res);
+  res.redirect(302, "/admin/login");
+});
+
+// --- Admin: trang quản trị (yêu cầu đăng nhập hoặc key trong URL) ---
+app.get("/admin", (req, res) => {
+  if (!ADMIN_SECRET) {
+    return res.status(500).send(
+      "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Admin</title></head><body><p>ADMIN_SECRET chưa được cấu hình trong file .env.</p></body></html>"
     );
+  }
+  if (!isAdminAuthenticated(req)) {
+    return res.redirect(302, "/admin/login");
+  }
+  // Nếu vào bằng ?key=... thì set cookie để lần sau không cần key
+  const key = (req.query.key || "").trim();
+  if (key === ADMIN_SECRET) {
+    setAdminCookie(res, createAdminToken());
+    return res.redirect(302, "/admin");
   }
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
@@ -874,8 +971,8 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Khởi động server ngay, preload chạy nền → không phải đợi mỗi lần restart
-app.listen(PORT, () => {
+// Khởi động server — giữ biến server để process không thoát
+const server = app.listen(PORT, () => {
   console.log(`Joy server is running on http://localhost:${PORT}`);
   console.log("Preloading rules + knowledge + model in background...");
   Promise.all([
@@ -893,4 +990,11 @@ app.listen(PORT, () => {
     (e) => console.warn("Preload warning:", e?.message || e)
   );
 });
+
+server.on("error", (err) => {
+  console.error("Server listen error:", err.message);
+});
+
+// Giữ process luôn chạy (tránh một số môi trường tự thoát)
+server.ref && server.ref();
 

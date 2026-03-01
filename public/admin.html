@@ -13,7 +13,18 @@
         padding: 12px 20px;
         font-weight: 600;
         font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
+      .admin-header a {
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        opacity: 0.95;
+      }
+      .admin-header a:hover { text-decoration: underline; }
       .admin-layout {
         display: flex;
         flex: 1;
@@ -32,6 +43,20 @@
         font-size: 14px;
         color: #6b7280;
         font-weight: 600;
+      }
+      .sidebar .search-wrap {
+        margin-bottom: 12px;
+      }
+      .sidebar .search-wrap input {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+      }
+      .sidebar .search-wrap input:focus {
+        outline: none;
+        border-color: #2c5cff;
       }
       .session-item {
         padding: 10px 12px;
@@ -123,10 +148,16 @@
     </style>
   </head>
   <body>
-    <div class="admin-header">Joy · Lịch sử hội thoại</div>
+    <div class="admin-header">
+      <span>Joy · Lịch sử hội thoại</span>
+      <a href="/admin/logout">Đăng xuất</a>
+    </div>
     <div class="admin-layout">
       <aside class="sidebar">
         <h2>Danh sách phiên chat</h2>
+        <div class="search-wrap">
+          <input type="text" id="searchContact" placeholder="Tìm theo tên hoặc SĐT..." />
+        </div>
         <div id="session-list"></div>
       </aside>
       <main class="content">
@@ -137,14 +168,6 @@
     </div>
     <script>
       (function () {
-        const params = new URLSearchParams(location.search);
-        const key = params.get("key") || "";
-        if (!key) {
-          document.getElementById("session-list").innerHTML =
-            '<p class="error">Thiếu key. Thêm <code>?key=joy_admin_2024</code> vào URL.</p>';
-          return;
-        }
-
         const listEl = document.getElementById("session-list");
         const contentEl = document.getElementById("content-area");
 
@@ -206,23 +229,47 @@
           }
         }
 
-        fetch("/api/admin/sessions?key=" + encodeURIComponent(key))
-          .then((r) => {
-            if (!r.ok) throw new Error(r.status === 401 ? "Sai key. Kiểm tra ADMIN_SECRET trong .env" : "Lỗi " + r.status);
-            return r.json();
-          })
-          .then((data) => {
-            if (data.error) throw new Error(data.error);
-            window._adminSessions = data.sessions || [];
-            renderSessionList(window._adminSessions);
-            if (window._adminSessions.length > 0) {
-              selectSession(0);
-            }
-          })
-          .catch((err) => {
-            listEl.innerHTML = "";
-            contentEl.innerHTML = '<p class="error">' + escape(err.message) + "</p>";
-          });
+        function loadSessions(search) {
+          const url = search
+            ? "/api/admin/sessions?search=" + encodeURIComponent(search)
+            : "/api/admin/sessions";
+          fetch(url, { credentials: "include" })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data })))
+            .then(({ ok, status, data }) => {
+              if (status === 401) {
+                window.location.href = "/admin/login";
+                return;
+              }
+              if (!ok) {
+                const msg = data && data.error ? data.error : "Lỗi " + status;
+                throw new Error(msg);
+              }
+              if (data.error) throw new Error(data.error);
+              window._adminSessions = data.sessions || [];
+              renderSessionList(window._adminSessions);
+              if (window._adminSessions.length > 0) {
+                selectSession(0);
+              } else if (search) {
+                contentEl.innerHTML = '<p class="loading">Không tìm thấy phiên nào với "' + escape(search) + '".</p>';
+              }
+            })
+            .catch((err) => {
+              listEl.innerHTML = "";
+              let msg = err && err.message ? err.message : String(err);
+              if (msg.indexOf("fetch failed") !== -1 || msg.indexOf("Failed to fetch") !== -1) {
+                msg = "Không kết nối được máy chủ. Hãy chạy npm start và mở lại /admin.";
+              }
+              contentEl.innerHTML = '<p class="error">' + escape(msg) + "</p>";
+            });
+        }
+
+        document.getElementById("searchContact").addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            loadSessions(this.value.trim());
+          }
+        });
+
+        loadSessions("");
       })();
     </script>
   </body>

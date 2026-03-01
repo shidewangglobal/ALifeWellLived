@@ -104,6 +104,33 @@ Sau khi thêm xong, bấm **Save** (hoặc tương đương).
 
 ---
 
+## Báo "Not Found" sau khi deploy
+
+**1. Kiểm tra Root Directory (quan trọng)**
+
+- Vào **Dashboard Render** → chọn **Web Service** Joy → **Settings** (hoặc **Configure**).
+- Kéo xuống mục **Root Directory**.
+  - Nếu trên GitHub, **package.json** và **server.js** nằm ngay ở **thư mục gốc** của repo → để **Root Directory trống**.
+  - Nếu code nằm trong **thư mục con** (vd: folder `scripts` trong repo) → điền đúng tên thư mục, ví dụ: `scripts`.
+- **Save Changes** → **Manual Deploy** → Deploy lại.
+
+**2. Kiểm tra Logs**
+
+- Trong trang Web Service → tab **Logs**.
+- Xem có dòng **"Joy server is running on http://localhost:..."** không. Nếu có lỗi đỏ (build failed, missing module, env...) thì sửa theo lỗi đó.
+
+**3. Đúng link**
+
+- Trang chủ / chat: `https://[TÊN-SERVICE].onrender.com`
+- Trang đăng nhập admin: `https://[TÊN-SERVICE].onrender.com/admin/login`  
+  (phải có `/admin/login`, không thiếu dấu `/`).
+
+**4. Free tier đang “ngủ”**
+
+- Lần đầu mở sau lâu không dùng có thể mất 30–60 giây, trang tạm lỗi hoặc “Not Found”. Đợi rồi F5 lại.
+
+---
+
 ## Lưu ý
 
 - **Free tier** Render sẽ sleep sau ~15 phút không có request. Lần mở đầu sau khi sleep có thể chậm 30–60 giây.
