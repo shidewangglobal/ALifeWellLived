@@ -245,10 +245,108 @@
         color: var(--text-muted);
         padding: 4px 16px 0;
       }
+
+      /* Màn trước khi chat: bắt buộc Tên + Email */
+      .pre-chat-screen {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(to top right, var(--bg-green) 0%, #e0f2e9 40%, #ede9fe 70%, var(--bg-lavender) 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 10;
+      }
+      .pre-chat-screen.hidden {
+        display: none;
+      }
+      .pre-chat-box {
+        width: 100%;
+        max-width: 360px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 28px 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      }
+      .pre-chat-box h2 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-dark);
+        text-align: center;
+      }
+      .pre-chat-box p {
+        margin: 0 0 20px 0;
+        font-size: 14px;
+        color: var(--text-muted);
+        text-align: center;
+      }
+      .pre-chat-box label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+      }
+      .pre-chat-box input {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 15px;
+        border: none;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+        box-sizing: border-box;
+      }
+      .pre-chat-box input:focus {
+        outline: none;
+        box-shadow: 0 2px 12px rgba(91, 33, 182, 0.2);
+      }
+      .pre-chat-box input::placeholder {
+        color: var(--text-muted);
+      }
+      .pre-chat-box .btn-enter {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--purple-dark);
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        margin-top: 8px;
+        box-shadow: 0 4px 14px rgba(91, 33, 182, 0.3);
+      }
+      .pre-chat-box .btn-enter:hover {
+        background: var(--purple-darker);
+      }
+      .pre-chat-box .hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 16px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
-    <div class="chat-container">
+    <!-- Màn điền Tên + Email trước khi vào chat. Lần sau (cùng trình duyệt) tự điền lại từ localStorage. -->
+    <div id="preChatScreen" class="pre-chat-screen">
+      <div class="pre-chat-box">
+        <h2>Joy · A Life Well Lived</h2>
+        <p>Vui lòng điền thông tin để bắt đầu trò chuyện</p>
+        <label for="gateName">Tên của bạn</label>
+        <input id="gateName" type="text" placeholder="Nhập tên" required />
+        <label for="gateContact">Email hoặc SĐT</label>
+        <input id="gateContact" type="text" placeholder="Nhập email hoặc số điện thoại" required />
+        <button type="button" id="gateEnter" class="btn-enter">Vào chat</button>
+        <p class="hint">Thông tin được lưu trên trình duyệt, lần sau sẽ tự điền lại.</p>
+      </div>
+    </div>
+
+    <div id="mainChat" class="chat-container" style="display: none;">
       <div class="chat-header">
         <div class="chat-header-title">Joy · A Life Well Lived - Sống Chất</div>
         <div class="chat-header-subtitle">Trợ lý dự án A Life Well Lived - Sống Chất · Đa ngôn ngữ</div>
@@ -258,10 +356,6 @@
       <div class="chat-input-bar">
         <div class="chat-input-wrap">
           <div id="userInfoArea">
-            <div class="chat-meta" id="userInfoInputs">
-              <input id="userName" type="text" placeholder="Tên của bạn (tùy chọn)" title="Điền để Joy và admin biết bạn là ai khi xem lịch sử" />
-              <input id="userContact" type="text" placeholder="SĐT hoặc Email (tùy chọn)" title="Điền để liên hệ lại khi cần" />
-            </div>
             <div class="user-info-display" id="userInfoDisplay" style="display: none;"></div>
           </div>
           <input
@@ -319,15 +413,13 @@
       function updateUserInfoDisplay() {
         const saved = getSavedUserInfo();
         const hasSaved = saved.name || saved.contact;
-        const inputsEl = document.getElementById("userInfoInputs");
         const displayEl = document.getElementById("userInfoDisplay");
+        if (!displayEl) return;
         if (hasSaved) {
-          inputsEl.style.display = "none";
           displayEl.style.display = "block";
           const parts = [saved.name, saved.contact].filter(Boolean);
           displayEl.innerHTML = "Bạn: <strong>" + parts.join(" · ") + "</strong>";
         } else {
-          inputsEl.style.display = "flex";
           displayEl.style.display = "none";
         }
       }
@@ -393,13 +485,6 @@
         try {
           const sessionId = getSessionId();
           const saved = getSavedUserInfo();
-          let userName = saved.name;
-          let userContact = saved.contact;
-          const nameInput = document.getElementById("userName");
-          const contactInput = document.getElementById("userContact");
-          if (nameInput && (nameInput.value || "").trim()) userName = (nameInput.value || "").trim();
-          if (contactInput && (contactInput.value || "").trim()) userContact = (contactInput.value || "").trim();
-          if (userName || userContact) saveUserInfo(userName, userContact);
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -407,8 +492,8 @@
               message: text,
               history,
               session_id: sessionId,
-              user_name: userName || undefined,
-              user_contact: userContact || undefined,
+              user_name: saved.name || undefined,
+              user_contact: saved.contact || undefined,
             }),
           });
 
@@ -444,7 +529,14 @@
         }
       });
 
-      (async function init() {
+      /* Màn trước chat: bắt buộc Tên + Email. Lần sau (cùng trình duyệt) tự điền lại từ localStorage. */
+      const preChatScreen = document.getElementById("preChatScreen");
+      const mainChat = document.getElementById("mainChat");
+      const gateName = document.getElementById("gateName");
+      const gateContact = document.getElementById("gateContact");
+      const gateEnter = document.getElementById("gateEnter");
+
+      async function initChat() {
         updateUserInfoDisplay();
         const hasHistory = await loadHistory();
         if (!hasHistory) {
@@ -453,7 +545,47 @@
             "Xin chào bạn, tôi là Joy – trợ lý ảo của dự án A Life Well Lived - Sống Chất. Tôi có thể hỗ trợ bạn tìm hiểu thông tin về hệ sinh thái sức khỏe và kinh doanh của chúng tôi. Bạn cần tôi hỗ trợ điều gì hôm nay?"
           );
         }
-      })();
+      }
+
+      function showChat() {
+        if (preChatScreen) preChatScreen.classList.add("hidden");
+        if (mainChat) mainChat.style.display = "flex";
+        updateUserInfoDisplay();
+        initChat();
+      }
+
+      function checkGateAndShow() {
+        const saved = getSavedUserInfo();
+        if (saved.name && saved.contact) {
+          showChat();
+        } else {
+          if (preChatScreen) preChatScreen.classList.remove("hidden");
+          if (mainChat) mainChat.style.display = "none";
+          if (gateName && saved.name) gateName.value = saved.name;
+          if (gateContact && saved.contact) gateContact.value = saved.contact;
+        }
+      }
+
+      function submitGate() {
+        const name = (gateName && gateName.value || "").trim();
+        const contact = (gateContact && gateContact.value || "").trim();
+        if (!name || !contact) {
+          alert("Vui lòng điền đầy đủ Tên và Email để vào chat.");
+          return;
+        }
+        saveUserInfo(name, contact);
+        showChat();
+        if (inputEl) inputEl.focus();
+      }
+
+      if (gateEnter) gateEnter.addEventListener("click", submitGate);
+      [gateName, gateContact].forEach(function (el) {
+        if (el) el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); submitGate(); }
+        });
+      });
+
+      checkGateAndShow();
     </script>
   </body>
   </html>
