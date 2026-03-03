@@ -84,6 +84,10 @@
         font-size: 12px;
         color: #6b7280;
       }
+      .session-item .meta .same-person {
+        color: #059669;
+        font-weight: 500;
+      }
       .content {
         flex: 1;
         overflow-y: auto;
@@ -111,6 +115,7 @@
         color: #374151;
       }
       .conversation-header .meta { font-size: 12px; font-weight: normal; color: #6b7280; margin-top: 4px; }
+      .conversation-header .same-person { color: #059669; font-weight: 500; }
       .message-list {
         list-style: none;
         margin: 0;
@@ -232,11 +237,14 @@
           }
           listEl.innerHTML = sessions
             .map(
-              (s, i) =>
-                `<div class="session-item" data-index="${i}" role="button" tabindex="0">
+              (s, i) => {
+                const samePerson = (s.same_person_sessions || 1) > 1;
+                const metaExtra = samePerson ? ` · <span class="same-person">Cùng 1 người (${s.same_person_sessions} phiên)</span>` : "";
+                return `<div class="session-item" data-index="${i}" role="button" tabindex="0">
                   <div class="label">${escape(s.label)}</div>
-                  <div class="meta">${escape(s.session_id.slice(0, 12))}… · ${s.message_count} tin</div>
-                </div>`
+                  <div class="meta">${escape(s.session_id.slice(0, 12))}… · ${s.message_count} tin${metaExtra}</div>
+                </div>`;
+              }
             )
             .join("");
 
@@ -247,10 +255,12 @@
 
         function renderConversation(session) {
           const timeFmt = (t) => (t ? new Date(t).toLocaleString("vi-VN") : "");
+          const samePersonNote = (session.same_person_sessions || 1) > 1
+            ? ` <span class="same-person">· Cùng 1 người (${session.same_person_sessions} phiên)</span>` : "";
           contentEl.innerHTML = `
             <div class="conversation">
               <div class="conversation-header">
-                ${escape(session.label)}
+                ${escape(session.label)}${samePersonNote}
                 <div class="meta">ID: ${escape(session.session_id)} · ${session.message_count} tin nhắn</div>
               </div>
               <ul class="message-list">

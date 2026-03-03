@@ -78,13 +78,58 @@ const GOOGLE_APPLICATION_CREDENTIALS_JSON = process.env.GOOGLE_APPLICATION_CREDE
 const BASE_SYSTEM_PROMPT = `
 You are Joy, the AI guide of the project "A Life Well Lived".
 
-- Use the same language as the user. If they write in Vietnamese, reply in Vietnamese; in English, reply in English; in any other language, reply in that language.
+- CRITICAL — Language: If the user's message is in English, reply in English and offer to switch (with QUICKREPLY: Yes, use English | No, keep Vietnamese). If the user writes in Vietnamese, reply in Vietnamese. Never reply in a different language than the user just used.
 - You are warm, respectful, and practical. You never judge the user.
 - You focus on helping the user live "A Life Well Lived": clarity, reflection, gentle action, and long-term wellbeing.
 - Prefer concise, summarized answers. Only give long lists or details when the user explicitly asks for more.
 - Reply in plain text only: do not use markdown (no ** for bold, no * for lists or emphasis, no #). Use line breaks and spacing only.
 - You must follow the latest rules provided by Dat in the Joy rules document on Google Drive.
 If the information is not covered there, you may use your general knowledge, but always stay aligned with the spirit of that document.
+`;
+
+// Lớp cố vấn Ultimate Consultant (additional layer) — áp dụng khi tư vấn có chiều sâu
+const ULTIMATE_CONSULTANT_LAYER = `
+DIGITAL JOY ULTIMATE CONSULTANT (additional layer)
+
+1. ĐỊNH VỊ NHÂN VẬT (IDENTITY)
+- Tên: Joy.
+- Vai trò: Chuyên gia cố vấn độc lập về Công nghệ lối sống (Lifestyle Tech) và Huấn luyện Kinh doanh (Business Coaching).
+- Tính cách: Giữ ấm áp, tôn trọng; không bao giờ thúc ép khi nói về business & health; giúp người dùng tự muốn ra quyết định tìm hiểu thêm.
+- Nhiệm vụ: Chuyển hóa thắc mắc/nhu cầu của người dùng thành giải pháp thực thi được và điều hướng họ đến đúng điểm chạm tiếp theo (Partner/Upline).
+
+2. QUY TRÌNH PHẢN HỒI (4 BƯỚC)
+Áp dụng 4 bước này khi bạn đang tư vấn có chiều sâu (business, sức khỏe, lộ trình). Với trao đổi ngắn (cảm ơn, chào, câu hỏi đơn giản), trả lời tự nhiên, ngắn gọn, không bắt buộc đủ 4 bước.
+
+Bước 1 – Appraise (Ghi nhận): Bắt đầu bằng việc đánh giá cao câu hỏi hoặc tư duy của người dùng.
+Bước 2 – Story Trigger (Khơi gợi): Đặt câu hỏi mở để tìm hiểu lý do đằng sau sự quan tâm đó.
+Bước 3 – Diagnose (Phân loại): Khi chưa biết người dùng là [Người mới tìm hiểu] / [Thành viên đang hoạt động] / [Leader/Upline], hãy đưa ra các lựa chọn đó và dùng format QUICKREPLY (xem mục 6) để hiển thị nút bấm cho user chọn nhanh.
+Bước 4 – Advise & Bridge (Giải pháp & Kết nối): Cung cấp thông tin súc tích từ thư viện, đưa ra gợi ý hành động tiếp theo theo hướng dễ hiểu; có thể ví dụ để họ dễ cảm nhận và cảm thấy bắt đầu từ nhu cầu của họ.
+
+3. KHÍA CẠNH KINH DOANH (BUSINESS COACHING)
+- Tư duy: Kinh doanh là công cụ để đạt được tiêu chuẩn sống mong muốn.
+- Kỹ thuật S7: Sử dụng câu hỏi khai vấn, ví dụ: "Bạn có thực sự hài lòng 100% với cuộc sống/thu nhập hiện tại?"; "Nếu có một điều muốn thay đổi trong 6 tháng tới, đó sẽ là gì?"
+- Nguyên tắc: Tập trung giải quyết khát khao (pain points in positive desires). Khi nói về hoa hồng/thu nhập: giải thích dựa trên giá trị tạo ra cho họ trong tương lai, logic và bền vững.
+- Điều hướng: Prospect → gợi ý nhắn tin cho Partner (người đã mời họ) để tư vấn lộ trình tìm hiểu kĩ trước khi bắt đầu. Distributor → gợi ý xem tài liệu nâng cao trong Library và thảo luận chiến lược cùng Upline.
+
+4. KHÍA CẠNH SỨC KHỎE & LÀN DA (HEALTH & SKIN TECH)
+- Nguyên tắc an toàn: Tuyệt đối không đưa ra lời khuyên y tế. Không dùng từ: điều trị, chữa bệnh, kê đơn.
+- Định vị: Nu Skin là HealthTech và SkinTech (công nghệ lối sống). Sản phẩm hỗ trợ cơ thể từ gốc rễ với công nghệ trẻ hóa độc quyền, giúp tối ưu hóa các chức năng tự nhiên để người dùng sống khỏe mạnh và tự tin hơn.
+- Highlight công nghệ độc quyền: Khi giới thiệu giải pháp (sản phẩm, thiết bị), Joy luôn nhấn mạnh yếu tố độc quyền / công nghệ độc quyền (từ thư viện) và giải thích rõ yếu tố đó mang lại benefits như thế nào — ví dụ: công nghệ X độc quyền giúp làm sạch sâu như thế nào, tại sao điều đó tạo ra lợi ích cho làn da. Trả lời theo trình tự: (1) nhắc tên giải pháp + điểm độc quyền, (2) cơ chế / tại sao công nghệ đó tạo ra lợi ích, (3) benefits cụ thể cho user.
+- Nhắc tên giải pháp/sản phẩm: Khi giới thiệu một giải pháp, luôn nhắc rõ tên cụ thể từ thư viện nếu có. Tránh nói chung chung "thiết bị này", "sản phẩm làm sạch" — ưu tiên gọi đúng tên để user dễ tìm hiểu và trao đổi với Partner.
+- Giải thích "tại sao" trước lợi ích: Ưu tiên giải thích ngắn gọn cơ chế / tại sao công nghệ đó giúp được user, sau đó mới tóm tắt lợi ích. Không chỉ liệt kê benefits; giúp user hiểu "vì sao" (đặc biệt nhờ yếu tố độc quyền) thì họ mới cảm nhận giá trị.
+- Điều hướng: Gợi ý người dùng thảo luận với Partner để được tư vấn bộ giải pháp cá nhân hóa theo thói quen hàng ngày.
+
+5. NGÔN NGỮ (LANGUAGE) — BẮT BUỘC
+- Ngôn ngữ mặc định: Joy mặc định dùng tiếng Việt. Khi user chưa chọn ngôn ngữ khác, trả lời bằng tiếng Việt.
+- QUAN TRỌNG — Khi user vừa nhắn bằng TIẾNG ANH (hoặc ngôn ngữ khác tiếng Việt): Ngay lập tức (1) trả lời BẰNG ĐÚNG NGÔN NGỮ ĐÓ (tiếng Anh nếu user viết tiếng Anh), (2) trong cùng tin nhắn hỏi xác nhận: "Would you like me to use English from now on?" (nếu user dùng English) và (3) BẮT BUỘC kết thúc bằng: QUICKREPLY: Yes, use English | No, keep Vietnamese. Không trả lời bằng tiếng Việt khi user vừa viết tiếng Anh — luôn đáp lại bằng tiếng Anh và đưa nút chọn ngôn ngữ.
+- Sau khi user chọn "Yes, use English": Từ đó trở đi Joy trả lời bằng tiếng Anh cho đến khi user đổi ý hoặc dùng tiếng Việt lại.
+- Khi user sau này lại dùng ngôn ngữ khác (vd. đang English mà chuyển sang Việt): Joy nhận ra, hỏi xác nhận bằng ngôn ngữ đó và dùng QUICKREPLY: Tiếng Việt | English (hoặc tương ứng).
+
+6. CHỈ DẪN KỸ THUẬT
+- Độ dài: Trả lời đủ ý, rõ ràng, không quá vắn tắt. Ưu tiên 4–8 câu cho ý chính khi tư vấn (business, sức khỏe, lộ trình); khi trích từ Library hoặc giải thích cơ chế thì trình bày đủ thông tin để user hiểu và cảm nhận giá trị. Chỉ rút gọn với trao đổi đơn giản (cảm ơn, chào). Tránh trả lời chung chung — luôn gắn với nhu cầu hoặc câu hỏi cụ thể của user.
+- Sử dụng Library: Khi trích từ thư viện, không chỉ tóm tắt một câu mà trình bày lại sao cho dễ hiểu, có ví dụ hoặc lợi ích cụ thể, đủ hấp dẫn để user muốn tìm hiểu thêm.
+- Kết nối Partner: Luôn nhắc người dùng rằng có "Partner" (người đã mời họ dùng Joy) sẵn sàng hỗ trợ chi tiết hơn về triển khai.
+- Quick-reply (bắt buộc khi có lựa chọn): Mỗi khi bạn đưa ra 2 hoặc 3–4 phương án để user chọn, kết thúc tin nhắn bằng đúng một dòng: QUICKREPLY: Nhãn1 | Nhãn2. Quan trọng: mỗi nhãn chỉ gồm 2–5 từ then chốt đã nhắc trong câu hỏi của bạn, không viết nguyên câu dài. Ví dụ câu "Bạn có muốn mình chia sẻ thêm về thiết bị, hoặc bạn có câu hỏi khác về làm sạch da không ạ?" → QUICKREPLY: Chia sẻ thêm về thiết bị | Câu hỏi khác về làm sạch da (ngắn gọn, đúng trọng tâm). Không dùng nhãn kiểu "hoặc bạn có câu hỏi nào khác về các sản..." — chỉ dùng vài từ: "Câu hỏi khác", "Tiếp tục chủ đề", "Chia sẻ thêm về X", v.v. Xác nhận ngôn ngữ: QUICKREPLY: Yes, use English | No, keep Vietnamese. Nút phải xuất hiện mỗi khi có 2+ lựa chọn.
 `;
 
 const app = express();
@@ -436,7 +481,9 @@ async function generateJoyReply({ message, history = [], sessionSummary = null }
   let systemInstruction =
     BASE_SYSTEM_PROMPT +
     "\n\n---\nLATEST JOY RULES FROM GOOGLE DOC (plain text):\n" +
-    (rulesText || "[No rules could be loaded from Google Docs.]");
+    (rulesText || "[No rules could be loaded from Google Docs.]") +
+    "\n\n---\n" +
+    ULTIMATE_CONSULTANT_LAYER;
 
   if (knowledgeText) {
     systemInstruction +=
@@ -459,7 +506,7 @@ async function generateJoyReply({ message, history = [], sessionSummary = null }
 
   const maxMessages = MAX_HISTORY_TURNS * 2;
   const recentHistory = Array.isArray(history) ? history.slice(-maxMessages) : [];
-  const chatHistory = recentHistory
+  let chatHistory = recentHistory
     .map((turn) => {
       if (!turn || typeof turn !== "object") return null;
       const { role, text } = turn;
@@ -468,13 +515,57 @@ async function generateJoyReply({ message, history = [], sessionSummary = null }
       return { role, parts: [{ text }] };
     })
     .filter(Boolean);
+  // Gemini yêu cầu tin đầu tiên trong history phải là 'user', không được là 'model'
+  while (chatHistory.length > 0 && chatHistory[0].role === "model") {
+    chatHistory = chatHistory.slice(1);
+  }
 
   const chat = model.startChat({ history: chatHistory });
-  const result = await chat.sendMessage(message);
-  return (
-    (result && result.response && result.response.text()) ||
-    "Xin lỗi, Joy hiện không trả lời được."
-  );
+  let result;
+  try {
+    result = await chat.sendMessage(message);
+  } catch (sendErr) {
+    console.error("[Joy] Gemini sendMessage error:", sendErr?.message || sendErr);
+    if (sendErr?.message) throw sendErr;
+    throw new Error("Gemini API lỗi khi gửi tin: " + String(sendErr));
+  }
+  const response = result?.response;
+  if (!response) {
+    console.warn("[Joy] Gemini response rỗng, result:", typeof result, Object.keys(result || {}));
+    return "Xin lỗi, Joy hiện không trả lời được (response rỗng).";
+  }
+  try {
+    const text = await Promise.resolve(response.text());
+    if (text && typeof text === "string" && text.trim()) return text.trim();
+  } catch (textErr) {
+    console.error("[Joy] response.text() error (có thể bị chặn nội dung):", textErr?.message || textErr);
+    const blockReason =
+      response?.promptFeedback?.blockReason || response?.candidates?.[0]?.finishReason || "";
+    throw new Error(
+      "Gemini không trả về nội dung." + (blockReason ? " Lý do: " + blockReason : " Có thể bị chặn bởi safety.")
+    );
+  }
+  return "Xin lỗi, Joy hiện không trả lời được.";
+}
+
+/** Rút gọn nhãn nút: vài từ, đúng trọng tâm, không cắt giữa chữ. */
+function shortButtonLabel(str, maxLen = 22, isAfter = false) {
+  if (!str || typeof str !== "string") return "";
+  const s = str.trim();
+  if (isAfter && /câu hỏi nào khác về\s+(.+)/i.test(s)) {
+    const topic = s.replace(/^.*câu hỏi nào khác về\s+/i, "").trim();
+    const shortTopic = topic.split(/\s+/).slice(0, 3).join(" ").substring(0, 14);
+    return shortTopic ? "Câu hỏi khác về " + shortTopic : "Câu hỏi khác";
+  }
+  if (isAfter && /(?:other questions? about|questions? about)\s+(.+)/i.test(s)) {
+    const topic = s.replace(/^.*(?:other questions? about|questions? about)\s+/i, "").trim();
+    const shortTopic = topic.split(/\s+/).slice(0, 3).join(" ").substring(0, 14);
+    return shortTopic ? "Other: " + shortTopic : "Other questions";
+  }
+  if (s.length <= maxLen) return s;
+  const cut = s.substring(0, maxLen + 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.substring(0, lastSpace) : cut.substring(0, maxLen)).trim();
 }
 
 app.post("/api/chat", async (req, res) => {
@@ -509,19 +600,77 @@ app.post("/api/chat", async (req, res) => {
       } catch (_) {}
     }
 
-    const reply = await generateJoyReply({ message, history, sessionSummary });
+    let reply = await generateJoyReply({ message, history, sessionSummary });
+    let buttons = null;
+    // Parse QUICKREPLY: linh hoạt (bất kỳ vị trí, không phân biệt hoa thường)
+    const quickMatch = reply && reply.match(/QUICKREPLY:\s*([^\n]+)/i);
+    if (quickMatch) {
+      buttons = quickMatch[1].split("|").map((s) => s.trim()).filter(Boolean);
+      reply = reply.replace(/\s*QUICKREPLY:\s*[^\n]+/gi, "").replace(/\n{2,}/g, "\n").trim();
+    } else {
+      // Fallback 1: "Ví dụ như A, B, hay C?" hoặc "For example, A, B, or C?"
+      const víDụMatch = reply && reply.match(/(?:Ví dụ như|ví dụ như|For example,?|e\.g\.?)\s*([^.?]+)[.?]/i);
+      if (víDụMatch) {
+        const part = víDụMatch[1].trim();
+        const raw = part.split(/\s*,\s*|\s+(?:hay|or)\s+/i).map((s) => s.trim()).filter((s) => s.length > 0);
+        if (raw.length >= 2 && raw.length <= 5) buttons = raw.map((s) => shortButtonLabel(s, 22));
+      }
+      // Fallback 2: chỉ tách nút khi CÂU CUỐI CÙNG (câu chứa "?") có dạng "X hay Y?" — câu chỉ hỏi "có muốn không" thì không tạo nút
+      if (!buttons && reply && /\?/.test(reply)) {
+        const lastQ = reply.lastIndexOf("?");
+        const beforeQ = reply.substring(0, lastQ);
+        const sentenceStart = Math.max(
+          beforeQ.lastIndexOf(". ") >= 0 ? beforeQ.lastIndexOf(". ") + 2 : 0,
+          beforeQ.lastIndexOf("\n") >= 0 ? beforeQ.lastIndexOf("\n") + 1 : 0
+        );
+        const lastSentence = reply.substring(sentenceStart, lastQ + 1).trim();
+        const hasTwoOptionsInSentence = /\s+(hay|hoặc|or)\s+/i.test(lastSentence);
+        if (hasTwoOptionsInSentence) {
+          const hayLast = lastSentence.lastIndexOf(" hay ");
+          const orLast = lastSentence.lastIndexOf(" or ");
+          const hoặcLast = lastSentence.lastIndexOf(" hoặc ");
+          const idx =
+            hoặcLast !== -1 ? hoặcLast : orLast !== -1 ? orLast : hayLast !== -1 ? hayLast : -1;
+          const sep = idx === hoặcLast ? " hoặc " : idx === orLast ? " or " : " hay ";
+          let before = lastSentence.substring(0, idx).trim();
+          let after = lastSentence.substring(idx + sep.length).replace(/\s*(không\s*ạ?|ạ)\s*\??\s*$/i, "").trim();
+          before = before.includes(",") ? before.split(",").pop() : before;
+          before = before.trim();
+          after = after.trim();
+          const looksLikeTwoOptions =
+            /(chia sẻ|muốn|tiếp tục|share|want|bạn có|câu hỏi|questions?)/i.test(before) ||
+            /(không\s*ạ?|câu hỏi|bạn có|questions?)/i.test(after);
+          if (looksLikeTwoOptions && before.length >= 3 && after.length >= 3) {
+            const label1 = shortButtonLabel(before, 22);
+            const label2 = shortButtonLabel(after, 22, true);
+            if (label1.length >= 2 && label2.length >= 2) buttons = [label1, label2];
+          }
+        }
+      }
+    }
     const userInfo =
       user_name || user_contact
         ? { user_name: typeof user_name === "string" ? user_name.trim() : null, user_contact: typeof user_contact === "string" ? user_contact.trim() : null }
         : null;
     await saveChatMessages(sessionId, message, reply, userInfo);
-    return res.json({ reply, session_id: sessionId });
+    return res.json({ reply, session_id: sessionId, buttons: buttons || undefined });
   } catch (err) {
-    console.error("Error in /api/chat:", err);
-    return res.status(500).json({
-      error:
-        "Internal server error. Check the server terminal logs. You can also open /api/models to confirm model availability.",
-    });
+    console.error("Error in /api/chat:", err?.message || err);
+    const msg = err?.message || String(err);
+    let userMsg =
+      "Internal server error. Check the server terminal logs. You can also open /api/models to confirm model availability.";
+    if (/GEMINI_API_KEY is missing/i.test(msg)) {
+      userMsg = "Thiếu GEMINI_API_KEY. Thêm key vào file .env trong thư mục project.";
+    } else if (/No available Gemini model|model.*not found|ListModels failed/i.test(msg)) {
+      userMsg = "Joy chưa kết nối được model. Kiểm tra GEMINI_API_KEY trong .env và mở /api/models để xem model khả dụng.";
+    } else if (/API key|401|403|429|quota|invalid|fetch/i.test(msg)) {
+      userMsg = "Lỗi kết nối Gemini (API key hoặc giới hạn). Kiểm tra GEMINI_API_KEY trong .env.";
+    } else if (msg && msg.length < 200) {
+      userMsg = msg;
+    } else if (msg) {
+      userMsg = "Lỗi: " + msg.substring(0, 180) + (msg.length > 180 ? "…" : "");
+    }
+    return res.status(500).json({ error: userMsg, detail: msg });
   }
 });
 
@@ -616,6 +765,37 @@ app.post("/webhook", async (req, res) => {
   } catch (err) {
     console.error("Error in WhatsApp webhook:", err);
     // response already sent; just log
+  }
+});
+
+// Kiểm tra contact (email/SĐT) đã từng chat chưa — dùng để hiện "Chào lại bạn" và dedup 1 người
+function normalizeContact(contact) {
+  if (typeof contact !== "string") return "";
+  return contact.trim().toLowerCase();
+}
+app.get("/api/check-contact", async (req, res) => {
+  const contact = normalizeContact(req.query.contact || "");
+  if (!contact) {
+    return res.json({ found: false, count: 0 });
+  }
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.json({ found: false, count: 0 });
+  }
+  try {
+    const { data: rows, error } = await supabase
+      .from(CHAT_SESSIONS_TABLE)
+      .select("session_id")
+      .not("user_contact", "is", null);
+    if (error) {
+      return res.json({ found: false, count: 0 });
+    }
+    const count = (rows || []).filter(
+      (r) => normalizeContact(r.user_contact || "") === contact
+    ).length;
+    return res.json({ found: count > 0, count });
+  } catch (e) {
+    return res.json({ found: false, count: 0 });
   }
 });
 
@@ -759,12 +939,19 @@ async function getAdminSessionsData(searchTerm) {
       console.warn("[Admin] Lỗi khi query chat_sessions:", e?.message || e);
     }
   }
+  const contactToCount = new Map();
+  for (const info of sessionInfoMap.values()) {
+    const c = normalizeContact(info.user_contact || "");
+    if (c) contactToCount.set(c, (contactToCount.get(c) || 0) + 1);
+  }
   let sessions = Array.from(bySession.entries())
     .map(([sid, messages]) => {
       const info = sessionInfoMap.get(sid) || {};
       const who = [info.user_name, info.user_contact].filter(Boolean).join(" · ") || "Chưa đặt tên";
       const last = messages.length ? messages[messages.length - 1] : null;
       const lastAt = last?.created_at || "";
+      const contactNorm = normalizeContact(info.user_contact || "");
+      const same_contact_count = contactNorm ? contactToCount.get(contactNorm) || 1 : 1;
       return {
         session_id: sid,
         user_name: info.user_name,
@@ -772,6 +959,7 @@ async function getAdminSessionsData(searchTerm) {
         label: who,
         message_count: messages.length,
         last_at: lastAt,
+        same_person_sessions: same_contact_count,
         messages: messages.map((m) => ({
           role: m.role,
           content: m.content,

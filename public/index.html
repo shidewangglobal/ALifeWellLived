@@ -121,6 +121,14 @@
       .message-row.user {
         flex-direction: row-reverse;
       }
+      .message-row.user .message-bubble-wrap {
+        align-self: flex-end;
+        min-width: min-content; /* không cho wrap co nhỏ hơn nội dung → tránh chữ user xuống hàng từng ký tự */
+      }
+      .message-row.user .message-bubble {
+        width: fit-content;
+        max-width: 100%;
+      }
 
       .message-avatar {
         width: 36px;
@@ -141,6 +149,7 @@
 
       .message-bubble {
         max-width: 78%;
+        min-width: 4em; /* tránh bubble bị co quá hẹp gây nhảy chữ từng ký tự */
         padding: 12px 16px;
         border-radius: 18px;
         font-size: 15px;
@@ -159,6 +168,33 @@
         color: var(--text-dark);
         border-bottom-left-radius: 6px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      }
+
+      .message-bubble-wrap {
+        display: flex;
+        flex-direction: column;
+        max-width: 78%;
+        min-width: 0; /* cho phép flex co đúng cách, bubble tự quyết width theo nội dung */
+      }
+      .quick-reply-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .quick-reply-btn {
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(91, 33, 182, 0.4);
+        background: rgba(243, 232, 255, 0.6);
+        color: var(--purple-dark);
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      .quick-reply-btn:hover {
+        background: rgba(243, 232, 255, 0.95);
+        box-shadow: 0 2px 8px rgba(91, 33, 182, 0.15);
       }
 
       .chat-input-bar {
@@ -471,7 +507,7 @@
         }, 80);
       }
 
-      function addMessage(role, text) {
+      function addMessage(role, text, options) {
         const row = document.createElement("div");
         row.className = "message-row " + (role === "user" ? "user" : "joy");
 
@@ -483,25 +519,39 @@
           row.appendChild(avatar);
         }
 
+        const wrap = document.createElement("div");
+        wrap.className = "message-bubble-wrap";
         const bubble = document.createElement("div");
         bubble.className = "message-bubble";
         bubble.appendChild(document.createTextNode(text));
-        row.appendChild(bubble);
-
+        wrap.appendChild(bubble);
+        if (role === "joy" && options && options.buttons && options.buttons.length > 0) {
+          const btnWrap = document.createElement("div");
+          btnWrap.className = "quick-reply-wrap";
+          options.buttons.forEach(function (label) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "quick-reply-btn";
+            btn.textContent = label;
+            btn.addEventListener("click", function () { sendMessageWithText(label); });
+            btnWrap.appendChild(btn);
+          });
+          wrap.appendChild(btnWrap);
+        }
+        row.appendChild(wrap);
         messagesEl.appendChild(row);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
 
-      async function sendMessage() {
-        const text = inputEl.value.trim();
-        if (!text) return;
+      async function sendMessageWithText(text) {
+        if (!text || !text.trim()) return;
         if (isSending) return;
         isSending = true;
         sendBtn.disabled = true;
         statusEl.textContent = "Joy is thinking...";
         addMessage("user", text);
         history.push({ role: "user", text });
-        clearInput();
+        if (inputEl && inputEl.value) clearInput();
 
         try {
           const sessionId = getSessionId();
@@ -520,12 +570,14 @@
 
           const data = await res.json();
           if (data.error) {
-            addMessage("joy", "Xin lỗi, Joy gặp lỗi: " + data.error);
+            let errText = "Xin lỗi, Joy gặp lỗi: " + data.error;
+            if (data.detail && data.detail !== data.error) errText += "\n\nChi tiết: " + data.detail;
+            addMessage("joy", errText);
           } else {
             if (data.session_id) try { localStorage.setItem(STORAGE_KEY, data.session_id); } catch (_) {}
             let reply = data.reply || "(no reply)";
             reply = reply.replace(/\*\*/g, "");
-            addMessage("joy", reply);
+            addMessage("joy", reply, data.buttons ? { buttons: data.buttons } : null);
             history.push({ role: "model", text: reply });
           }
         } catch (err) {
@@ -540,6 +592,12 @@
           statusEl.textContent = "";
           clearInput();
         }
+      }
+
+      function sendMessage() {
+        const text = inputEl.value.trim();
+        if (!text) return;
+        sendMessageWithText(text);
       }
 
       sendBtn.addEventListener("click", sendMessage);
@@ -561,10 +619,23 @@
         updateUserInfoDisplay();
         const hasHistory = await loadHistory();
         if (!hasHistory) {
-          addMessage(
-            "joy",
-            "Xin chào bạn, tôi là Joy – trợ lý ảo của dự án A Life Well Lived - Sống Chất. Tôi có thể hỗ trợ bạn tìm hiểu thông tin về hệ sinh thái sức khỏe và kinh doanh của chúng tôi. Bạn cần tôi hỗ trợ điều gì hôm nay?"
-          );
+          const saved = getSavedUserInfo();
+          let isReturning = false;
+          if (saved.contact) {
+            try {
+              const r = await fetch("/api/check-contact?contact=" + encodeURIComponent(saved.contact));
+              const d = await r.json();
+              if (d && d.found) isReturning = true;
+            } catch (_) {}
+          }
+          if (isReturning) {
+            addMessage("joy", "Chào mừng bạn quay trở lại! 👋 Tôi có thể giúp gì cho bạn hôm nay?");
+          } else {
+            addMessage(
+              "joy",
+              "Xin chào bạn, tôi là Joy – trợ lý ảo của dự án A Life Well Lived - Sống Chất. Tôi có thể hỗ trợ bạn tìm hiểu thông tin về hệ sinh thái sức khỏe và kinh doanh của chúng tôi. Bạn cần tôi hỗ trợ điều gì hôm nay?"
+            );
+          }
         }
       }
 
