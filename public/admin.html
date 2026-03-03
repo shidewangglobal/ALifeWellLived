@@ -96,6 +96,7 @@
         padding: 40px 20px;
         font-size: 15px;
       }
+      .mobile-hint { display: none; }
       .conversation {
         max-width: 720px;
         margin: 0 auto;
@@ -145,15 +146,62 @@
       }
       .loading { color: #6b7280; padding: 20px; }
       .error { color: #dc2626; padding: 20px; background: #fef2f2; border-radius: 8px; margin: 20px; }
+
+      /* Mobile: sidebar drawer, content full width */
+      .menu-toggle {
+        display: none;
+        background: rgba(255,255,255,0.25);
+        border: none;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 90;
+      }
+      .sidebar-overlay.show { display: block; }
+      @media (max-width: 768px) {
+        .menu-toggle { display: inline-flex; align-items: center; }
+        .admin-layout { position: relative; }
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 85%;
+          max-width: 320px;
+          z-index: 100;
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        }
+        .sidebar.open { transform: translateX(0); }
+        .content {
+          width: 100%;
+          min-width: 0;
+          padding: 12px;
+        }
+        .conversation { max-width: none; }
+        .mobile-hint { display: inline; }
+      }
     </style>
   </head>
   <body>
     <div class="admin-header">
+      <button type="button" class="menu-toggle" id="menuToggle" aria-label="Mở danh sách">☰ Danh sách</button>
       <span>Joy · Lịch sử hội thoại</span>
       <a href="/admin/logout">Đăng xuất</a>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="admin-layout">
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
         <h2>Danh sách phiên chat</h2>
         <div class="search-wrap">
           <input type="text" id="searchContact" placeholder="Tìm theo tên hoặc SĐT..." />
@@ -162,7 +210,7 @@
       </aside>
       <main class="content">
         <div id="content-area">
-          <div class="content-placeholder">Chọn một phiên bên trái để xem nội dung.</div>
+          <div class="content-placeholder">Chọn một phiên bên trái để xem nội dung.<span class="mobile-hint"> Nhấn <strong>☰ Danh sách</strong> để mở danh sách phiên.</span></div>
         </div>
       </main>
     </div>
@@ -227,7 +275,24 @@
           if (window._adminSessions && window._adminSessions[index]) {
             renderConversation(window._adminSessions[index]);
           }
+          closeSidebarMobile();
         }
+
+        function isMobile() { return window.innerWidth <= 768; }
+        function openSidebarMobile() {
+          document.getElementById("sidebar").classList.add("open");
+          document.getElementById("sidebarOverlay").classList.add("show");
+        }
+        function closeSidebarMobile() {
+          document.getElementById("sidebar").classList.remove("open");
+          document.getElementById("sidebarOverlay").classList.remove("show");
+        }
+
+        document.getElementById("menuToggle").addEventListener("click", function () {
+          document.getElementById("sidebar").classList.toggle("open");
+          document.getElementById("sidebarOverlay").classList.toggle("show");
+        });
+        document.getElementById("sidebarOverlay").addEventListener("click", closeSidebarMobile);
 
         function loadSessions(search) {
           const url = search

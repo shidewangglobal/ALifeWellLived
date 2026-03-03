@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Preview: Layout desktop – Joy + 2 ô hai bên</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-green: #e8f5e9;
+        --bg-lavender: #f3e8ff;
+        --purple-dark: #5b21b6;
+        --text-dark: #1f2937;
+        --text-muted: #6b7280;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(to top right, var(--bg-green) 0%, #e0f2e9 40%, #ede9fe 70%, var(--bg-lavender) 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        overflow-x: hidden;
+      }
+
+      /* 3 cột bằng nhau, chat giữa; toàn bộ fit trong màn hình desktop */
+      .desktop-layout {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        width: 100%;
+        max-width: 1400px;
+        min-height: 0;
+        height: 85vh;
+        max-height: calc(100vh - 48px);
+      }
+      .desktop-layout > * {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* Ô 1: Prysm iO – trong suốt, thấy nền */
+      .panel-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+        background: transparent;
+        min-height: 0;
+      }
+      .panel-left .brand-wrap {
+        text-align: center;
+      }
+      .panel-left h1 {
+        margin: 0 0 8px 0;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        font-size: clamp(30px, 3.5vw, 46px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--purple-dark);
+        line-height: 1.1;
+      }
+      .panel-left .tagline {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(18px, 2vw, 26px);
+        font-weight: 500;
+        font-style: italic;
+        color: var(--text-dark);
+        line-height: 1.4;
+        text-align: center;
+        max-width: 260px;
+        margin: 0;
+      }
+      .panel-left .tagline .line2 { display: block; }
+
+      /* Ô 2: Chat Joy – đúng giữa màn hình */
+      .panel-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 16px;
+        background: transparent;
+        min-height: 0;
+      }
+      .panel-center .chat-placeholder {
+        width: 100%;
+        max-width: 420px;
+        height: 100%;
+        min-height: 280px;
+        max-height: 100%;
+        border-radius: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        background: transparent;
+      }
+      .panel-center .chat-placeholder iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* Ô 3: Collage + Quote; quote ngay dưới viền ô 5; fit trong cột */
+      .panel-right {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 16px 12px;
+        background: transparent;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .collage-container {
+        position: relative;
+        width: 100%;
+        max-width: 260px;
+        min-height: 580px;
+        margin: 0 auto;
+        flex-shrink: 0;
+      }
+      .collage-item {
+        position: absolute;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+      .collage-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .collage-item.placeholder {
+        background: linear-gradient(135deg, #e0f2e9 0%, #ede9fe 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      /* Ô 1: 44%, 78.4%. Ô 2: right 36.4%, top 30%. Ô 5: width = ô 1 (78.4%), cao = ngang (1:1), overlap ô 1&2, z trên cùng; viền phải cách ô 1 là 20%; viền trên cao hơn 40% so với đáy ô 2 */
+      .collage-item:nth-child(1) {
+        width: 78.4%; aspect-ratio: 0.5769; left: 44%; top: 0; right: auto; bottom: auto; z-index: 1;
+      }
+      .collage-item:nth-child(2) {
+        width: 84.5%; aspect-ratio: 0.9; right: 36.4%; left: auto; top: 30%; bottom: auto; z-index: 2;
+      }
+      .collage-item:nth-child(3) {
+        width: 78.4%; aspect-ratio: 1; right: -6.7%; left: auto; top: 50.5%; bottom: auto; z-index: 3;
+      }
+
+      /* Kéo quote sát dưới ô 5; khung đủ rộng để câu ngắn nằm 1 hàng (vd. "Hành động nhỏ mỗi ngày - sức khoẻ bền lâu") */
+      .quote-wrap {
+        margin-top: -5.2rem;
+        padding-top: 0;
+        text-align: center;
+        min-width: 280px;
+        max-width: 300px;
+        width: 100%;
+        flex-shrink: 0;
+      }
+      .quote-text {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-dark);
+        font-style: italic;
+        margin: 0;
+        overflow-wrap: break-word;
+        word-break: keep-all;
+        hyphens: none;
+        max-width: 100%;
+        display: block;
+      }
+      .quote-text strong { font-style: normal; color: var(--purple-dark); }
+
+      .preview-badge {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(91, 33, 182, 0.9);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        z-index: 100;
+      }
+
+      /* Mobile: chỉ hiện khung chat Joy, full màn hình — seamless */
+      @media (max-width: 1023px) {
+        body { padding: 0; }
+        .desktop-layout {
+          height: 100vh;
+          max-height: none;
+        }
+        .panel-left,
+        .panel-right {
+          display: none !important;
+        }
+        .panel-center {
+          flex: 1;
+          width: 100%;
+          max-width: none;
+          padding: 0;
+        }
+        .panel-center .chat-placeholder {
+          max-width: none;
+          width: 100%;
+          height: 100%;
+          min-height: 100%;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .preview-badge::after { content: " Mobile · Chỉ khung chat Joy"; }
+      }
+      /* Desktop: view full 3 cột */
+      @media (min-width: 1024px) {
+        .preview-badge::after { content: " Desktop · Full 3 cột"; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-badge">Preview thiết kế</div>
+
+    <div class="desktop-layout">
+      <!-- Ô 1: Prysm iO – trong suốt -->
+      <aside class="panel-left">
+        <div class="brand-wrap">
+          <h1>Prysm iO</h1>
+          <p class="tagline">Nền tảng quản trị<span class="line2">sức khoẻ gia đình</span></p>
+        </div>
+      </aside>
+
+      <!-- Ô 2: Khung chat Joy – iframe trang chat thật (luôn đúng thiết kế mới nhất) -->
+      <main class="panel-center">
+        <div class="chat-placeholder">
+          <iframe src="/" title="Joy chat"></iframe>
+        </div>
+      </main>
+
+      <!-- Ô 3: Collage + Quote – trong suốt, collage giữa phần phải -->
+      <aside class="panel-right">
+        <div class="collage-container">
+          <div class="collage-item"><img src="assets/bg-newsletter-c0675bae-d542-4a23-bd85-254ecd85935a.png" alt="" /></div>
+          <div class="collage-item"><img src="assets/611742355_903201375604417_6593739724152076174_n-401cefd0-06d3-4411-9b4f-9898088af05b.png" alt="" /></div>
+          <div class="collage-item"><img src="assets/601033493_889645333626688_2939332232073039545_n-a8ac9f1a-759a-49fb-a829-0a9fbb442579.png" alt="" /></div>
+        </div>
+        <div class="quote-wrap">
+          <p class="quote-text" id="quoteDisplay">"Hành động nhỏ mỗi ngày — sức khoẻ bền lâu."</p>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      var quotes = [
+        "Hành động nhỏ mỗi ngày — sức khoẻ bền lâu.",
+        "Sống chất là chọn điều có ý nghĩa, mỗi ngày.",
+        "Bước đầu tiên luôn là bước quan trọng nhất."
+      ];
+      var el = document.getElementById("quoteDisplay");
+      if (el) {
+        var shortQuotes = quotes.filter(function (s) { return s.length <= 50; });
+        var pool = shortQuotes.length ? shortQuotes : quotes;
+        var q = pool[Math.floor(Math.random() * pool.length)];
+        el.textContent = '"' + q + '"';
+      }
+    </script>
+  </body>
+</html>
