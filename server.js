@@ -138,6 +138,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Trang chính: layout 3 cột (Prysm trái, chat giữa, collage+quote phải) — desktop có 2 panel, mobile chỉ chat
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "design-preview-desktop.html"));
+});
+// Trang chỉ khung chat (iframe trong layout desktop hoặc truy cập trực tiếp)
+app.get("/chat", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 if (!process.env.GEMINI_API_KEY) {
@@ -1152,11 +1162,6 @@ app.get("/admin", (req, res) => {
     return res.redirect(302, "/admin");
   }
   res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-// Serve main page for root path
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Khởi động server — giữ biến server để process không thoát
