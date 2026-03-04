@@ -20,7 +20,7 @@ git remote add origin https://github.com/shidewangglobal/ALifeWellLived.git
 # ========== BƯỚC 5: Đặt nhánh main và đẩy lên ==========
 git branch -M main
 
-# Repo của bạn đã có README nên cần kéo về trước rồi mới đẩy:
-git pull origin main --allow-unrelated-histories --no-edit
+# Repo đã có README: gộp nhánh (merge) rồi đẩy
+git merge origin/main --allow-unrelated-histories -m "Merge with repo README"
 
 git push -u origin main

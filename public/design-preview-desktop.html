@@ -154,6 +154,7 @@
       }
       .collage-item:nth-child(2) {
         width: 84.5%; aspect-ratio: 0.9; right: 36.4%; left: auto; top: 30%; bottom: auto; z-index: 2;
+        transform: translateY(-20%); /* dịch lên 1/5 chiều cao của ô */
       }
       .collage-item:nth-child(3) {
         width: 78.4%; aspect-ratio: 1; right: -6.7%; left: auto; top: 50.5%; bottom: auto; z-index: 3;
@@ -183,19 +184,6 @@
       }
       .quote-text strong { font-style: normal; color: var(--purple-dark); }
 
-      .preview-badge {
-        position: fixed;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(91, 33, 182, 0.9);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 12px;
-        z-index: 100;
-      }
-
       /* Mobile: chỉ hiện khung chat Joy, full màn hình — seamless */
       @media (max-width: 1023px) {
         body { padding: 0; }
@@ -221,17 +209,10 @@
           border-radius: 0;
           box-shadow: none;
         }
-        .preview-badge::after { content: " Mobile · Chỉ khung chat Joy"; }
-      }
-      /* Desktop: view full 3 cột */
-      @media (min-width: 1024px) {
-        .preview-badge::after { content: " Desktop · Full 3 cột"; }
       }
     </style>
   </head>
   <body>
-    <div class="preview-badge">Preview thiết kế</div>
-
     <div class="desktop-layout">
       <!-- Ô 1: Prysm iO – trong suốt -->
       <aside class="panel-left">
