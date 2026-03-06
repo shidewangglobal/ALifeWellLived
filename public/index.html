@@ -69,6 +69,19 @@
         .chat-header {
           border-radius: 0;
         }
+        .chat-messages {
+          padding: 12px 10px 12px 8px; /* trống minimal: trái 8px (sát kiểu WhatsApp), phải 10px */
+        }
+        .message-bubble, .message-bubble-wrap {
+          max-width: 90%; /* mobile: bubble rộng, tận dụng không gian */
+        }
+        .message-row.joy .message-bubble-wrap,
+        .message-row.joy .message-bubble {
+          max-width: 94%; /* mobile: bubble Joy gần full width, minimal lề trái */
+        }
+        .chat-messages {
+          padding: 12px 10px 12px 6px; /* mobile: trái minimal như WhatsApp */
+        }
         .pre-chat-screen {
           position: fixed;
           inset: 0;
@@ -79,7 +92,7 @@
 
       .chat-header {
         padding: 16px 20px;
-        background: rgba(243, 232, 255, 0.9);
+        background: rgba(243, 232, 255, 0.95);
         color: var(--text-dark);
         display: flex;
         flex-direction: column;
@@ -88,6 +101,10 @@
         gap: 4px;
         border-radius: 24px 24px 0 0;
         text-align: center;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
       }
 
       .chat-header-title {
@@ -105,7 +122,7 @@
       .chat-messages {
         flex: 1;
         min-height: 0;
-        padding: 16px;
+        padding: 16px 12px 16px 8px; /* trái minimal như WhatsApp, phải vừa đủ */
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
@@ -117,6 +134,9 @@
         align-items: flex-end;
         gap: 10px;
         margin-bottom: 14px;
+      }
+      .message-row.joy {
+        gap: 4px; /* sát trái tối đa kiểu WhatsApp: avatar sát bubble */
       }
       .message-row.user {
         flex-direction: row-reverse;
@@ -148,7 +168,7 @@
       }
 
       .message-bubble {
-        max-width: 78%;
+        max-width: 85%;
         min-width: 4em; /* tránh bubble bị co quá hẹp gây nhảy chữ từng ký tự */
         padding: 12px 16px;
         border-radius: 18px;
@@ -173,14 +193,28 @@
       .message-bubble-wrap {
         display: flex;
         flex-direction: column;
-        max-width: 78%;
+        max-width: 85%;
         min-width: 0; /* cho phép flex co đúng cách, bubble tự quyết width theo nội dung */
       }
+      /* Bubble Joy: mở rộng phải, tỉ lệ kiểu Messenger/WhatsApp, tận dụng không gian */
+      .message-row.joy .message-bubble-wrap,
+      .message-row.joy .message-bubble {
+        max-width: 92%;
+      }
+      /* Nút đề xuất phía user chọn — căn phải, tự nhiên như ảnh tham khảo */
       .quick-reply-wrap {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 10px;
+        margin-top: 12px;
+        align-self: flex-end;
+        max-width: 100%;
+      }
+      .quick-reply-label {
+        width: 100%;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
       }
       .quick-reply-btn {
         padding: 8px 14px;
@@ -198,6 +232,7 @@
       }
 
       .chat-input-bar {
+        flex-shrink: 0;
         padding: 12px 16px 20px;
         background: rgba(255, 255, 255, 0.9);
         display: flex;
@@ -298,6 +333,7 @@
       }
 
       .status {
+        flex-shrink: 0;
         font-size: 11px;
         color: var(--text-muted);
         padding: 4px 16px 0;
@@ -528,6 +564,10 @@
         if (role === "joy" && options && options.buttons && options.buttons.length > 0) {
           const btnWrap = document.createElement("div");
           btnWrap.className = "quick-reply-wrap";
+          const labelEl = document.createElement("div");
+          labelEl.className = "quick-reply-label";
+          labelEl.textContent = "Bạn có thể chọn:";
+          btnWrap.appendChild(labelEl);
           options.buttons.forEach(function (label) {
             const btn = document.createElement("button");
             btn.type = "button";
