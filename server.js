@@ -131,7 +131,7 @@ Bước 4 – Advise & Bridge (Giải pháp & Kết nối): Cung cấp thông ti
 - Độ dài: Trả lời đủ ý, rõ ràng, không quá vắn tắt. Ưu tiên 4–8 câu cho ý chính khi tư vấn (business, sức khỏe, lộ trình); khi trích từ Library hoặc giải thích cơ chế thì trình bày đủ thông tin để user hiểu và cảm nhận giá trị. Chỉ rút gọn với trao đổi đơn giản (cảm ơn, chào). Tránh trả lời chung chung — luôn gắn với nhu cầu hoặc câu hỏi cụ thể của user.
 - Sử dụng Library: Khi trích từ thư viện, không chỉ tóm tắt một câu mà trình bày lại sao cho dễ hiểu, nhấn mạnh góc độ độc đáo hoặc "tại sao", có ví dụ hoặc so sánh nếu phù hợp, đủ hấp dẫn để user muốn tìm hiểu thêm.
 - Kết nối Partner: Luôn nhắc người dùng rằng có "Partner" sẵn sàng hỗ trợ chi tiết hơn. Quan trọng: khi bạn đưa ra 2+ lựa chọn cho user (vd. "would you like A, B, or C?"), đừng để câu nhắc Partner làm câu cuối — đặt nhắc Partner TRƯỚC câu hỏi có lựa chọn, rồi hỏi và kết thúc bằng QUICKREPLY. Ví dụ đúng: "[Nội dung.] Your Partner can also offer personalized recommendations. Would you like to explore daily vitality, improved focus, or recovery? QUICKREPLY: Daily vitality | Improved focus | Recovery after activity". Sai: kết thúc bằng "Your Partner can also provide..." khi đã hỏi có lựa chọn — khi đó user không thấy nút.
-- Quick-reply (bắt buộc khi có lựa chọn): Mỗi khi bạn đưa ra 2 hoặc 3–4 phương án để user chọn, kết thúc tin nhắn bằng đúng một dòng: QUICKREPLY: Nhãn1 | Nhãn2 | Nhãn3. Quy trình tạo nhãn nút — không ngắt từ từ câu, mà: (1) tóm tắt mỗi lựa chọn thành **chủ đề** (topic); (2) từ chủ đề tạo **một cụm từ ngắn** rõ ràng cho nút (chỉ cần đủ ý, không dài). Ví dụ: "explore daily vitality" → chủ đề năng lượng hàng ngày → nhãn nút: "Sống khoẻ mỗi ngày". "apply to a specific case" → nhãn nút: "Ví dụ cụ thể". Xác nhận ngôn ngữ giữ nguyên: QUICKREPLY: Yes, use English | No, keep Vietnamese. Nút phải xuất hiện mỗi khi có 2+ lựa chọn.
+- Quick-reply (bắt buộc khi có lựa chọn): Mỗi khi bạn đưa ra 2 hoặc 3–4 phương án để user chọn, kết thúc tin nhắn bằng đúng một dòng: QUICKREPLY: Nhãn1 | Nhãn2 | Nhãn3. Nhãn nút = **chủ đề ngắn** (topic), KHÔNG cắt từ giữa câu. Ví dụ: "chia sẻ thêm về bài học kinh nghiệm hay câu chuyện cụ thể?" → QUICKREPLY: Bài học kinh nghiệm | Câu chuyện cụ thể. "explore daily vitality or improved focus?" → QUICKREPLY: Daily vitality | Improved focus. Xác nhận ngôn ngữ: QUICKREPLY: Yes, use English | No, keep Vietnamese. Nút phải xuất hiện mỗi khi có 2+ lựa chọn.
 `;
 
 const app = express();
@@ -627,7 +627,7 @@ app.post("/api/chat", async (req, res) => {
         const raw = part.split(/\s*,\s*|\s+(?:hay|or)\s+/i).map((s) => s.trim()).filter((s) => s.length > 0);
         if (raw.length >= 2 && raw.length <= 5) buttons = raw.map((s) => shortButtonLabel(s, 22));
       }
-      // Fallback 2: chỉ tách nút khi CÂU CUỐI CÙNG (câu chứa "?") có dạng "X hay Y?" — câu chỉ hỏi "có muốn không" thì không tạo nút
+      // Fallback 2: chỉ tách nút khi CÂU CUỐI có "X hay Y?" và ta trích được đúng CỤM CHỦ ĐỀ (option), không phải mảnh câu
       if (!buttons && reply && /\?/.test(reply)) {
         const lastQ = reply.lastIndexOf("?");
         const beforeQ = reply.substring(0, lastQ);
@@ -646,16 +646,22 @@ app.post("/api/chat", async (req, res) => {
           const sep = idx === hoặcLast ? " hoặc " : idx === orLast ? " or " : " hay ";
           let before = lastSentence.substring(0, idx).trim();
           let after = lastSentence.substring(idx + sep.length).replace(/\s*(không\s*ạ?|ạ)\s*\??\s*$/i, "").trim();
-          before = before.includes(",") ? before.split(",").pop() : before;
+          // Chỉ lấy phần LỰA CHỌN (chủ đề), bỏ phần câu hỏi dẫn (Bạn có muốn Joy chia sẻ thêm về ...)
+          if (before.includes(" về ")) before = before.split(" về ").pop().trim();
+          else if (before.includes(" about ")) before = before.split(" about ").pop().trim();
+          else if (before.includes(",")) before = before.split(",").pop().trim();
+          if (after.includes(" của ")) after = after.replace(/\s+của\s+.+$/, "").trim();
+          else if (after.includes(" of ")) after = after.replace(/\s+of\s+.+$/, "").trim();
+          before = before.replace(/^những\s+/i, "").trim();
+          after = after.replace(/\s+nào\s*$/, "").trim();
           before = before.trim();
           after = after.trim();
-          const looksLikeTwoOptions =
-            /(chia sẻ|muốn|tiếp tục|share|want|bạn có|câu hỏi|questions?)/i.test(before) ||
-            /(không\s*ạ?|câu hỏi|bạn có|questions?)/i.test(after);
-          if (looksLikeTwoOptions && before.length >= 3 && after.length >= 3) {
-            const label1 = shortButtonLabel(before, 22);
-            const label2 = shortButtonLabel(after, 22, true);
-            if (label1.length >= 2 && label2.length >= 2) buttons = [label1, label2];
+          const looksLikeQuestionStart = /^(Bạn có|Do you|Joy chia|Would you|muốn Joy|share more)/i.test(before) || before.length > 40;
+          if (!looksLikeQuestionStart && before.length >= 2 && after.length >= 2) {
+            const label1 = shortButtonLabel(before, 28);
+            const label2 = shortButtonLabel(after, 28, true);
+            const invalid = /^(bạn có|do you|joy |would you|muốn joy)/i.test(label1) || /^(bạn có|do you|joy )/i.test(label2);
+            if (label1.length >= 2 && label2.length >= 2 && !invalid) buttons = [label1, label2];
           }
         }
       }
