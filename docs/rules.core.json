@@ -1,0 +1,224 @@
+{
+  "ruleset_id": "Fortune Core Ruleset v1",
+  "version": "1.0.0",
+  "order": [
+    "CORE.CUNG_MONTH_MAP.BASIC.v1",
+    "CORE.CUNG_DAY_ROLLING.BASIC.v1",
+    "CORE.CUNG_HOUR_ROLLING.BASIC.v1",
+    "CORE.CUNG_PAIR.MEANING_TABLE.v1",
+    "CORE.HOAGIAP.NAPAM_30_TABLE.v1",
+    "CORE.CANCHI.HOUR_STEM_DERIVATION.v1",
+    "CORE.SUPPORT.TAMHOP.v1",
+    "CORE.SUPPORT.CAN_HOP.v1",
+    "CORE.SUPPORT.CAN_KHAC.v1",
+    "CORE.SUPPORT.TUOI_KY.v1"
+  ],
+  "rules": {
+    "CORE.CUNG_MONTH_MAP.BASIC.v1": {
+      "type": "mapping",
+      "description": "Map lunar month to month cung from Dai An at month 1.",
+      "base_sequence": [
+        "DAI_AN",
+        "LUU_LIEN",
+        "TOC_HY",
+        "XICH_KHAU",
+        "TIEU_CAT",
+        "KHONG_VONG"
+      ],
+      "start_month": 1,
+      "start_cung": "DAI_AN"
+    },
+    "CORE.CUNG_DAY_ROLLING.BASIC.v1": {
+      "type": "rolling_index",
+      "description": "From month cung, roll each day by one cung starting day 1.",
+      "roll_by": 1,
+      "anchor_day": 1
+    },
+    "CORE.CUNG_HOUR_ROLLING.BASIC.v1": {
+      "type": "rolling_index",
+      "description": "From day cung, set hour Ty then roll by one cung per 2-hour block.",
+      "roll_by": 1,
+      "anchor_hour_branch": "TY",
+      "hour_branches_order": [
+        "TY",
+        "SUU",
+        "DAN",
+        "MAO",
+        "THIN",
+        "TY2",
+        "NGO",
+        "MUI",
+        "THAN",
+        "DAU",
+        "TUAT",
+        "HOI"
+      ],
+      "branch_alias": {
+        "TY2": "TY"
+      }
+    },
+    "CORE.CUNG_PAIR.MEANING_TABLE.v1": {
+      "type": "pair_mapping",
+      "description": "Meaning table for day_cung + hour_cung.",
+      "symmetry_mode": "derive_if_missing",
+      "pairs": {
+        "DAI_AN+DAI_AN": "Binh an, khong viec lon.",
+        "DAI_AN+LUU_LIEN": "Dung dang, kho quyet dinh.",
+        "DAI_AN+TOC_HY": "Loi viec nhanh neu gio la Toc Hy.",
+        "DAI_AN+XICH_KHAU": "Doi cho, di dung, van chuyen.",
+        "DAI_AN+TIEU_CAT": "That nghiep cho viec, sua nha.",
+        "DAI_AN+KHONG_VONG": "Buon phien, be tac.",
+        "LUU_LIEN+LUU_LIEN": "Tri tre, cho doi, ro rac phap ly.",
+        "LUU_LIEN+TOC_HY": "Buc tuc, thu tin xa.",
+        "LUU_LIEN+XICH_KHAU": "Xung dot dan toi phap ly, hoa khau.",
+        "LUU_LIEN+KHONG_VONG": "Chui luon, tron chay, phi phap.",
+        "LUU_LIEN+DAI_AN": "Dung dang, kho quyet.",
+        "TOC_HY+TOC_HY": "Viec bat ngo, tin thu xa.",
+        "TOC_HY+XICH_KHAU": "Cai va, khau thiet.",
+        "TOC_HY+TIEU_CAT": "Qua cap, loi loc bat ngo.",
+        "TOC_HY+KHONG_VONG": "Du lich, vui choi.",
+        "TOC_HY+DAI_AN": "Loi viec lau dai neu gio la Dai An.",
+        "TOC_HY+LUU_LIEN": "Buc tuc, thu tin xa.",
+        "XICH_KHAU+XICH_KHAU": "Ban luan, tranh cai, an uong.",
+        "XICH_KHAU+TIEU_CAT": "Ban lam an, dich vu, moi gioi.",
+        "XICH_KHAU+KHONG_VONG": "Truoc xau sau tot.",
+        "XICH_KHAU+DAI_AN": "Doi cho, di dung, van chuyen.",
+        "XICH_KHAU+LUU_LIEN": "Xung dot dan toi phap ly.",
+        "XICH_KHAU+TOC_HY": "Cai va, khau thiet.",
+        "TIEU_CAT+TIEU_CAT": "Lam an lon, loi loc lon.",
+        "TIEU_CAT+KHONG_VONG": "Ton tai, lo la, om dau.",
+        "TIEU_CAT+DAI_AN": "That nghiep, cho viec, sua nha.",
+        "TIEU_CAT+LUU_LIEN": "Tai loc lon, buon ban lon.",
+        "KHONG_VONG+KHONG_VONG": "Rui ro rat cao, xui ro lon."
+      }
+    },
+    "CORE.HOAGIAP.NAPAM_30_TABLE.v1": {
+      "type": "dataset_ref",
+      "description": "Reference to 30 nap am pairs used by day/hour can-chi.",
+      "dataset_key": "hoa_giap_30_v1"
+    },
+    "CORE.CANCHI.HOUR_STEM_DERIVATION.v1": {
+      "type": "mapping",
+      "description": "Determine stem of Ty hour from day stem.",
+      "day_stem_to_ty_hour_stem": {
+        "GIAP": "GIAP",
+        "KY": "GIAP",
+        "AT": "BINH",
+        "CANH": "BINH",
+        "BINH": "MAU",
+        "TAN": "MAU",
+        "DINH": "CANH",
+        "NHAM": "CANH",
+        "MAU": "NHAM",
+        "QUY": "NHAM"
+      }
+    },
+    "CORE.SUPPORT.TAMHOP.v1": {
+      "type": "group_mapping",
+      "groups": {
+        "MOC": [
+          "HOI",
+          "MAO",
+          "MUI"
+        ],
+        "KIM": [
+          "TY2",
+          "DAU",
+          "SUU"
+        ],
+        "THUY": [
+          "THAN",
+          "TY",
+          "THIN"
+        ],
+        "HOA": [
+          "DAN",
+          "NGO",
+          "TUAT"
+        ]
+      }
+    },
+    "CORE.SUPPORT.CAN_HOP.v1": {
+      "type": "pair_mapping",
+      "pairs": {
+        "GIAP": "KY",
+        "AT": "CANH",
+        "BINH": "TAN",
+        "DINH": "NHAM",
+        "MAU": "QUY"
+      }
+    },
+    "CORE.SUPPORT.CAN_KHAC.v1": {
+      "type": "pair_mapping",
+      "pairs": {
+        "GIAP": "MAU",
+        "KY": "QUY",
+        "AT": "KY",
+        "CANH": "GIAP",
+        "BINH": "CANH",
+        "TAN": "AT",
+        "DINH": "TAN",
+        "NHAM": "BINH",
+        "MAU": "NHAM",
+        "QUY": "DINH"
+      }
+    },
+    "CORE.SUPPORT.TUOI_KY.v1": {
+      "type": "ban_list",
+      "years_by_age_branch": {
+        "TY": [
+          "NGO",
+          "TY"
+        ],
+        "SUU": [
+          "SUU",
+          "NGO",
+          "MUI"
+        ],
+        "DAN": [
+          "THAN",
+          "DAN"
+        ],
+        "MAO": [
+          "MAO",
+          "DAU",
+          "THIN"
+        ],
+        "THIN": [
+          "THIN",
+          "TUAT"
+        ],
+        "TY2": [
+          "TY2",
+          "HOI"
+        ],
+        "NGO": [
+          "SUU",
+          "NGO",
+          "TY"
+        ],
+        "MUI": [
+          "DAU",
+          "HOI"
+        ],
+        "THAN": [
+          "DAN",
+          "THAN"
+        ],
+        "DAU": [
+          "MAO",
+          "DAU",
+          "TUAT"
+        ],
+        "TUAT": [
+          "THIN",
+          "TUAT"
+        ],
+        "HOI": [
+          "TY2",
+          "HOI"
+        ]
+      }
+    }
+  }
+}

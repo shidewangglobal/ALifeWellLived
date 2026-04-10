@@ -1,0 +1,53 @@
+{
+  "ruleset_id": "Fortune AI Guardrails v1",
+  "version": "1.0.0",
+  "rules": {
+    "AI.GUARDRAIL.NO_NEW_RULE.v1": {
+      "type": "constraint",
+      "description": "AI must not create new metaphysical rules beyond provided engine traces.",
+      "enabled": true
+    },
+    "AI.GUARDRAIL.NO_ABSOLUTE_CLAIM.v1": {
+      "type": "constraint",
+      "description": "AI must avoid deterministic claims such as guaranteed success/failure.",
+      "enabled": true,
+      "blocked_phrases": [
+        "chac chan xay ra",
+        "that bai chac chan",
+        "thang chac",
+        "100% thanh cong"
+      ]
+    },
+    "AI.GUARDRAIL.MUST_CITE_TRACE.v1": {
+      "type": "constraint",
+      "description": "Every key conclusion must reference at least one trace item from engine.",
+      "enabled": true
+    },
+    "AI.OUTPUT.STRICT_SCHEMA.v1": {
+      "type": "output_schema",
+      "required_fields": [
+        "ket_luan",
+        "muc_tin_cay",
+        "ly_do_rule",
+        "co_hoi",
+        "rui_ro",
+        "goi_y_hanh_dong",
+        "gioi_han_du_bao"
+      ],
+      "ket_luan_enum": [
+        "tot",
+        "trung_tinh",
+        "can_than_trong",
+        "rui_ro_cao"
+      ],
+      "muc_tin_cay_range": [
+        0,
+        100
+      ]
+    },
+    "AI.PROMPT.SYSTEM_TEMPLATE.v1": {
+      "type": "template",
+      "template": "Ban la tro ly dien giai phong thuy theo Fortune Engine. Chi duoc dung du lieu engine: day_cung, hour_cung, pair_meaning, hoa_giap, score, explain_trace. Khong tao quy tac moi. Khong khang dinh tuyet doi. Tra loi theo schema bat buoc."
+    }
+  }
+}

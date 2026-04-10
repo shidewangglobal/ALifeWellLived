@@ -1,0 +1,200 @@
+{
+  "ruleset_id": "Fortune Context Ruleset v1",
+  "version": "1.0.0",
+  "rules": {
+    "CTX.SUBJECT.PRIMARY_SECONDARY_WEIGHT.v1": {
+      "type": "weight_table",
+      "weights": {
+        "primary_subject": 0.7,
+        "secondary_subject_total": 0.3
+      },
+      "secondary_distribution": "equal_split"
+    },
+    "CTX.DOMAIN.BUSINESS.ACTION_MAP.v1": {
+      "type": "action_map",
+      "domain": "business",
+      "actions_by_cung": {
+        "TOC_HY": {
+          "do": [
+            "Gui de xuat ngan gon, co gia tri ro rang.",
+            "Dat muc tieu hen follow-up nhanh."
+          ],
+          "avoid": [
+            "Noi dai, thieu CTA."
+          ]
+        },
+        "TIEU_CAT": {
+          "do": [
+            "Ban ve loi ich, bien do loi nhuan, chinh sach hop tac.",
+            "Xin cam ket buoc nho."
+          ],
+          "avoid": [
+            "Ep chot qua som."
+          ]
+        },
+        "XICH_KHAU": {
+          "do": [
+            "Hoi nhu cau, xac nhan thong tin bang van ban."
+          ],
+          "avoid": [
+            "Tranh luan gia gay gat."
+          ]
+        },
+        "KHONG_VONG": {
+          "do": [
+            "Chi dat muc tieu giu lien lac."
+          ],
+          "avoid": [
+            "Ky vong chot don tai cho."
+          ]
+        }
+      }
+    },
+    "CTX.DOMAIN.REAL_ESTATE.ACTION_MAP.v1": {
+      "type": "action_map",
+      "domain": "real_estate",
+      "actions_by_cung": {
+        "DAI_AN": {
+          "do": [
+            "Uu tien tham dinh phap ly va quy hoach.",
+            "Hen buoi gap ky tai lieu."
+          ],
+          "avoid": [
+            "Mo rong cam ket vuot kha nang."
+          ]
+        },
+        "TIEU_CAT": {
+          "do": [
+            "Ban gia tri su dung va dong tien.",
+            "Chot buoc dat coc nho neu dong thuan."
+          ],
+          "avoid": [
+            "Bo qua dieu khoan phat sinh."
+          ]
+        },
+        "XICH_KHAU": {
+          "do": [
+            "Dung checklist 2 ben ky xac nhan."
+          ],
+          "avoid": [
+            "Cai nhau ve gia truoc khi ro phap ly."
+          ]
+        },
+        "KHONG_VONG": {
+          "do": [
+            "Tap trung xay dung thien cam, dat lich lan 2."
+          ],
+          "avoid": [
+            "Chot coc gia tri lon."
+          ]
+        }
+      }
+    },
+    "CTX.DOMAIN.MARRIAGE.ACTION_MAP.v1": {
+      "type": "action_map",
+      "domain": "marriage",
+      "actions_by_cung": {
+        "TOC_HY": {
+          "do": [
+            "Mo loi bang thong diep vui ve, dong thuan."
+          ],
+          "avoid": [
+            "Noi chuyen tien bac qua sau."
+          ]
+        },
+        "DAI_AN": {
+          "do": [
+            "Thong nhat cac moc on dinh va ben vung."
+          ],
+          "avoid": [
+            "Quyet dinh vo i."
+          ]
+        },
+        "XICH_KHAU": {
+          "do": [
+            "Dat nguyen tac giao tiep ton trong."
+          ],
+          "avoid": [
+            "Khoi lai mau thuan cu."
+          ]
+        },
+        "KHONG_VONG": {
+          "do": [
+            "Tam hoan viec lon, uu tien xu ly cam xuc."
+          ],
+          "avoid": [
+            "An dinh ngay ky ket quan trong."
+          ]
+        }
+      }
+    },
+    "CTX.DOMAIN.LEGAL.ACTION_MAP.v1": {
+      "type": "action_map",
+      "domain": "legal",
+      "actions_by_cung": {
+        "DAI_AN": {
+          "do": [
+            "Hoan thien ho so day du, dung mau."
+          ],
+          "avoid": [
+            "Nop thieu tai lieu."
+          ]
+        },
+        "LUU_LIEN": {
+          "do": [
+            "Du phong thoi gian xu ly keo dai."
+          ],
+          "avoid": [
+            "Ky vong xong ngay."
+          ]
+        },
+        "XICH_KHAU": {
+          "do": [
+            "Trao doi qua email co dau vet."
+          ],
+          "avoid": [
+            "Tranh cai mieng khong bien ban."
+          ]
+        },
+        "KHONG_VONG": {
+          "do": [
+            "Tam dung ky ket quan trong neu thieu minh chung."
+          ],
+          "avoid": [
+            "Nho vay khong ro nguon."
+          ]
+        }
+      }
+    },
+    "CTX.DOMAIN.TRAVEL.ACTION_MAP.v1": {
+      "type": "action_map",
+      "domain": "travel",
+      "actions_by_cung": {
+        "TOC_HY": {
+          "do": [
+            "Dat lich di chuyen nhanh, xu ly viec ngan han."
+          ],
+          "avoid": [
+            "Lich trinh qua sat."
+          ]
+        },
+        "DAI_AN": {
+          "do": [
+            "Uu tien hanh trinh an toan, on dinh."
+          ],
+          "avoid": [
+            "Doi lich lien tuc."
+          ]
+        },
+        "KHONG_VONG": {
+          "do": [
+            "Kiem tra bao hiem va du phong."
+          ],
+          "avoid": [
+            "Di cung duong la vao dem muon."
+          ]
+        }
+      }
+    }
+  }
+}

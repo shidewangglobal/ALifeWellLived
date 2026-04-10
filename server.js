@@ -4,6 +4,8 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 require("dotenv").config();
+const APP_MODE = (process.env.APP_MODE || "FORTUNE").trim().toUpperCase();
+const IS_FORTUNE_MODE = APP_MODE === "FORTUNE";
 
 // Giữ process không thoát khi có lỗi chưa bắt (để server không tự tắt, nhảy về prompt)
 process.on("uncaughtException", (err) => {
@@ -14,8 +16,8 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { google } = require("googleapis");
-const { createClient } = require("@supabase/supabase-js");
+let googleClientLib = null;
+let createSupabaseClient = null;
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").trim();
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
@@ -24,8 +26,16 @@ const CHAT_MESSAGES_TABLE = "chat_messages";
 const CHAT_SESSIONS_TABLE = "chat_sessions";
 
 function getSupabase() {
+  if (!createSupabaseClient) {
+    try {
+      createSupabaseClient = require("@supabase/supabase-js").createClient;
+    } catch (e) {
+      console.warn("supabase-js not available:", e?.message || e);
+      return null;
+    }
+  }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
 async function saveChatMessages(sessionId, userMessage, modelReply, userInfo = null) {
@@ -71,6 +81,7 @@ const JOY_KNOWLEDGE_DOC_IDS = (process.env.JOY_KNOWLEDGE_DOC_IDS || "")
   .filter(Boolean);
 // Optional: read ALL Google Docs inside this folder (and subfolders) via Drive API
 const JOY_DRIVE_FOLDER_ID = (process.env.JOY_DRIVE_FOLDER_ID || "").trim();
+const ENABLE_DRIVE_KNOWLEDGE = false;
 const GOOGLE_APPLICATION_CREDENTIALS = (process.env.GOOGLE_APPLICATION_CREDENTIALS || "").trim();
 // Optional: full JSON key as string (for deploy without uploading file, e.g. Render/Railway)
 const GOOGLE_APPLICATION_CREDENTIALS_JSON = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || "";
@@ -166,6 +177,86 @@ let cachedModelName = null;
 const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "";
 const WA_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || "";
 const WA_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || "").trim();
+const TELEGRAM_WEBHOOK_SECRET = (process.env.TELEGRAM_WEBHOOK_SECRET || "").trim();
+const TELEGRAM_DATA_DIR = path.join(__dirname, "data");
+const TELEGRAM_SUBSCRIPTIONS_FILE = path.join(TELEGRAM_DATA_DIR, "telegram_subscriptions.json");
+
+function ensureTelegramStore() {
+  try {
+    if (!fs.existsSync(TELEGRAM_DATA_DIR)) fs.mkdirSync(TELEGRAM_DATA_DIR, { recursive: true });
+    if (!fs.existsSync(TELEGRAM_SUBSCRIPTIONS_FILE)) {
+      fs.writeFileSync(TELEGRAM_SUBSCRIPTIONS_FILE, JSON.stringify({ subscriptions: [] }, null, 2), "utf8");
+    }
+  } catch (e) {
+    console.warn("Cannot initialize Telegram storage:", e?.message || e);
+  }
+}
+
+function readTelegramSubscriptions() {
+  ensureTelegramStore();
+  try {
+    const raw = fs.readFileSync(TELEGRAM_SUBSCRIPTIONS_FILE, "utf8");
+    const json = JSON.parse(raw);
+    const list = Array.isArray(json?.subscriptions) ? json.subscriptions : [];
+    return list;
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeTelegramSubscriptions(subscriptions) {
+  ensureTelegramStore();
+  fs.writeFileSync(
+    TELEGRAM_SUBSCRIPTIONS_FILE,
+    JSON.stringify({ subscriptions: Array.isArray(subscriptions) ? subscriptions : [] }, null, 2),
+    "utf8"
+  );
+}
+
+async function sendTelegramMessage({ chatId, text }) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    throw new Error("Missing TELEGRAM_BOT_TOKEN in .env");
+  }
+  if (!chatId || !text) {
+    throw new Error("chatId and text are required");
+  }
+  const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: String(chatId),
+      text: String(text),
+      disable_web_page_preview: true,
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data?.ok) {
+    throw new Error(`Telegram send failed: ${resp.status} ${resp.statusText} ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
+function isValidDeliveryTime(v) {
+  return typeof v === "string" && /^\d{2}:\d{2}$/.test(v) && Number(v.slice(0, 2)) <= 23 && Number(v.slice(3, 5)) <= 59;
+}
+
+function buildDailyTelegramDigest(sub) {
+  const topicLabel = {
+    general: "chuyện hằng ngày",
+    business: "làm ăn/kinh doanh",
+    real_estate: "mua đất/bất động sản",
+    marriage: "cưới xin/tình cảm",
+    legal: "giấy tờ/pháp lý",
+    travel: "di chuyển/xuất hành",
+  }[sub?.topic || "general"] || "chuyện hằng ngày";
+  return [
+    "Joy nhắc lịch hằng ngày",
+    `Chủ đề bạn quan tâm: ${topicLabel}.`,
+    "Gợi ý: mở dashboard để xem cung ngày và 12 canh giờ tốt/xấu trước khi quyết việc quan trọng.",
+    "Bạn có thể chat thêm với Joy để lấy khung giờ phù hợp theo tình huống cụ thể.",
+  ].join("\n");
+}
 
 async function listAvailableModels() {
   const key = process.env.GEMINI_API_KEY;
@@ -225,6 +316,7 @@ let cachedRulesFetchedAt = 0;
 const RULES_TTL_MS = 15 * 60 * 1000; // 15 minutes (fewer reloads from Drive)
 
 async function fetchRulesFromGoogleDoc() {
+  if (IS_FORTUNE_MODE) return "";
   if (!JOY_RULE_DOC_ID) {
     return "";
   }
@@ -274,6 +366,14 @@ const MIME_PDF = "application/pdf";
 const MIME_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 function getDriveClient() {
+  if (!googleClientLib) {
+    try {
+      googleClientLib = require("googleapis").google;
+    } catch (e) {
+      console.warn("googleapis not available:", e?.message || e);
+      return null;
+    }
+  }
   let key;
   if (GOOGLE_APPLICATION_CREDENTIALS_JSON && GOOGLE_APPLICATION_CREDENTIALS_JSON.trim()) {
     try {
@@ -305,11 +405,11 @@ function getDriveClient() {
   } else {
     return null;
   }
-  const auth = new google.auth.GoogleAuth({
+  const auth = new googleClientLib.auth.GoogleAuth({
     credentials: key,
     scopes: ["https://www.googleapis.com/auth/drive.readonly"],
   });
-  return google.drive({ version: "v3", auth });
+  return googleClientLib.drive({ version: "v3", auth });
 }
 
 const DRIVE_READABLE_TYPES = [MIME_DOC, MIME_SHEET, MIME_PDF, MIME_XLSX];
@@ -443,13 +543,14 @@ async function getJoyKnowledgeFromDocIds() {
 }
 
 async function getJoyKnowledgeText() {
+  if (IS_FORTUNE_MODE) return "";
   const now = Date.now();
   if (cachedKnowledgeText && now - cachedKnowledgeFetchedAt < KNOWLEDGE_TTL_MS) {
     return cachedKnowledgeText;
   }
 
   let full = "";
-  if (JOY_DRIVE_FOLDER_ID && getDriveClient()) {
+  if (ENABLE_DRIVE_KNOWLEDGE && JOY_DRIVE_FOLDER_ID && getDriveClient()) {
     full = await getJoyKnowledgeFromDriveFolder();
   }
   if (!full && JOY_KNOWLEDGE_DOC_IDS.length > 0) {
@@ -847,6 +948,12 @@ app.get("/api/history", async (req, res) => {
 
 // Debug endpoint: show current Joy rules (for verification)
 app.get("/api/rules", async (req, res) => {
+  if (IS_FORTUNE_MODE) {
+    return res.json({
+      disabled: true,
+      reason: "Joy Drive integration is disabled in FORTUNE mode.",
+    });
+  }
   try {
     const text = await getJoyRulesText();
     res.json({
@@ -861,6 +968,12 @@ app.get("/api/rules", async (req, res) => {
 
 // Which Drive docs Joy uses as knowledge (and short preview)
 app.get("/api/knowledge", async (req, res) => {
+  if (IS_FORTUNE_MODE) {
+    return res.json({
+      disabled: true,
+      reason: "Joy Drive integration is disabled in FORTUNE mode.",
+    });
+  }
   try {
     const text = await getJoyKnowledgeText();
     res.json({
@@ -897,6 +1010,74 @@ app.get("/api/models", async (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ ok: true });
+});
+
+// --- Telegram-first notification APIs ---
+app.post("/api/telegram/test-send", async (req, res) => {
+  try {
+    const chatId = (req.body?.chat_id || "").toString().trim();
+    const text = (req.body?.text || "Joy test: ket noi Telegram thanh cong.").toString().trim();
+    if (!chatId) return res.status(400).json({ error: "Missing chat_id" });
+    const sent = await sendTelegramMessage({ chatId, text });
+    return res.json({ ok: true, sent });
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
+});
+
+app.post("/api/telegram/subscriptions", async (req, res) => {
+  try {
+    const chatId = (req.body?.chat_id || "").toString().trim();
+    const topic = (req.body?.topic || "general").toString().trim();
+    const deliveryTime = (req.body?.delivery_time || "06:30").toString().trim();
+    const timezone = (req.body?.timezone || "Asia/Ho_Chi_Minh").toString().trim();
+    const active = req.body?.active !== false;
+    if (!chatId) return res.status(400).json({ error: "Missing chat_id" });
+    if (!isValidDeliveryTime(deliveryTime)) {
+      return res.status(400).json({ error: "delivery_time must be HH:MM" });
+    }
+
+    const subscriptions = readTelegramSubscriptions();
+    const nowIso = new Date().toISOString();
+    const idx = subscriptions.findIndex((s) => String(s.chat_id) === String(chatId));
+    const next = {
+      chat_id: chatId,
+      topic,
+      delivery_time: deliveryTime,
+      timezone,
+      active,
+      updated_at: nowIso,
+      created_at: idx >= 0 ? subscriptions[idx].created_at : nowIso,
+      last_sent_date: idx >= 0 ? subscriptions[idx].last_sent_date || null : null,
+    };
+    if (idx >= 0) subscriptions[idx] = next;
+    else subscriptions.push(next);
+    writeTelegramSubscriptions(subscriptions);
+    return res.json({ ok: true, subscription: next });
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
+});
+
+app.get("/api/telegram/subscriptions", (req, res) => {
+  const chatId = (req.query.chat_id || "").toString().trim();
+  const subscriptions = readTelegramSubscriptions();
+  if (!chatId) return res.json({ subscriptions });
+  return res.json({ subscriptions: subscriptions.filter((s) => String(s.chat_id) === String(chatId)) });
+});
+
+app.post("/api/telegram/subscriptions/:chatId/send-now", async (req, res) => {
+  try {
+    const chatId = (req.params.chatId || "").toString().trim();
+    const subscriptions = readTelegramSubscriptions();
+    const sub = subscriptions.find((s) => String(s.chat_id) === String(chatId));
+    if (!sub) return res.status(404).json({ error: "Subscription not found" });
+    const text = buildDailyTelegramDigest(sub);
+    const sent = await sendTelegramMessage({ chatId, text });
+    return res.json({ ok: true, sent });
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
 });
 
 // Kiểm tra nhanh Supabase + bảng chat_messages (để debug khi admin trống)
@@ -1175,6 +1356,11 @@ app.get("/admin", (req, res) => {
 // Khởi động server — giữ biến server để process không thoát
 const server = app.listen(PORT, () => {
   console.log(`Joy server is running on http://localhost:${PORT}`);
+  console.log(`App mode: ${APP_MODE}`);
+  if (IS_FORTUNE_MODE) {
+    console.log("FORTUNE mode: Joy Drive preload disabled.");
+    return;
+  }
   console.log("Preloading rules + knowledge + model in background...");
   Promise.all([
     getJoyRulesText().catch((e) => {
@@ -1198,4 +1384,36 @@ server.on("error", (err) => {
 
 // Giữ process luôn chạy (tránh một số môi trường tự thoát)
 server.ref && server.ref();
+
+// Telegram daily notifier loop (MVP): checks every 60s.
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const ymd = now.toISOString().slice(0, 10);
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const localTime = `${hh}:${mm}`;
+    const subscriptions = readTelegramSubscriptions().filter((s) => s && s.active);
+    if (!subscriptions.length) return;
+    let changed = false;
+    for (const sub of subscriptions) {
+      if (sub.delivery_time !== localTime) continue;
+      if (sub.last_sent_date === ymd) continue;
+      try {
+        await sendTelegramMessage({
+          chatId: sub.chat_id,
+          text: buildDailyTelegramDigest(sub),
+        });
+        sub.last_sent_date = ymd;
+        sub.updated_at = new Date().toISOString();
+        changed = true;
+      } catch (e) {
+        console.warn("Telegram scheduled send failed:", sub.chat_id, e?.message || e);
+      }
+    }
+    if (changed) writeTelegramSubscriptions(subscriptions);
+  } catch (e) {
+    console.warn("Telegram notifier loop error:", e?.message || e);
+  }
+}, 60 * 1000);
 

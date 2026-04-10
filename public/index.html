@@ -698,6 +698,15 @@
         }
       }
 
+      function applyPrefillMessage() {
+        try {
+          const prefill = (localStorage.getItem("joy_prefill_message") || "").trim();
+          if (!prefill) return;
+          inputEl.value = prefill;
+          localStorage.removeItem("joy_prefill_message");
+        } catch (_) {}
+      }
+
       function submitGate() {
         const name = (gateName && gateName.value || "").trim();
         const contact = (gateContact && gateContact.value || "").trim();
@@ -718,6 +727,7 @@
       });
 
       checkGateAndShow();
+      setTimeout(applyPrefillMessage, 300);
     </script>
   </body>
   </html>

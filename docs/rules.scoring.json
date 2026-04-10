@@ -1,0 +1,58 @@
+{
+  "ruleset_id": "Fortune Scoring Ruleset v1",
+  "version": "1.0.0",
+  "rules": {
+    "SCORE.POSITIVE.BASE_WEIGHT.v1": {
+      "type": "weight_table",
+      "weights": {
+        "DAI_AN": 0.45,
+        "LUU_LIEN": 0.2,
+        "TOC_HY": 0.75,
+        "XICH_KHAU": 0.15,
+        "TIEU_CAT": 0.9,
+        "KHONG_VONG": 0.05
+      }
+    },
+    "SCORE.RISK.BASE_WEIGHT.v1": {
+      "type": "weight_table",
+      "weights": {
+        "DAI_AN": 0.2,
+        "LUU_LIEN": 0.55,
+        "TOC_HY": 0.25,
+        "XICH_KHAU": 0.7,
+        "TIEU_CAT": 0.25,
+        "KHONG_VONG": 0.95
+      }
+    },
+    "SCORE.CONFIDENCE.BY_SOURCE.v1": {
+      "type": "weight_table",
+      "weights": {
+        "core": 1.0,
+        "experience": 0.7,
+        "derived": 0.6
+      }
+    },
+    "SCORE.CONFLICT.RESOLUTION.v1": {
+      "type": "policy",
+      "policy": "weighted_blend",
+      "formula": "final = (sum(positive * conf) - sum(risk * conf)) normalized to 0..100",
+      "priority": [
+        "core",
+        "experience",
+        "derived"
+      ],
+      "caps": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    "SCORE.ENTITLEMENT.TRIAL_FIRST.v1": {
+      "type": "billing_policy",
+      "consume_order": [
+        "premium_trial",
+        "credit_wallet"
+      ],
+      "premium_trial_default_quota": 5
+    }
+  }
+}
