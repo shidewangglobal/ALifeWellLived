@@ -52,12 +52,13 @@
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
       }
 
+      /* Chiều cao thật trên mobile (Safari): JS set --joy-vvh từ visualViewport; svh = fallback khi chưa có */
       @media (max-width: 480px) {
         html {
           overflow: hidden;
           overscroll-behavior: none;
-          height: 100%;
-          height: 100dvh;
+          height: var(--joy-vvh, 100svh);
+          max-height: var(--joy-vvh, 100svh);
         }
         body {
           overflow: hidden;
@@ -66,24 +67,25 @@
           inset: 0;
           width: 100%;
           max-width: 100%;
-          height: 100%;
-          height: 100dvh;
-          max-height: 100dvh;
+          height: var(--joy-vvh, 100svh);
+          max-height: var(--joy-vvh, 100svh);
           padding: 0;
           margin: 0;
           display: block;
           background-attachment: scroll;
           touch-action: manipulation;
         }
-        /* Khóa toàn bộ khung chat trong viewport */
+        /* Khung chat = đúng vùng nhìn thấy (không thừa chiều cao → ô nhập không nằm dưới thanh Safari) */
         .chat-container {
           position: fixed;
-          inset: 0;
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
           max-width: none;
           width: 100%;
-          height: 100%;
-          height: 100dvh;
-          max-height: 100dvh;
+          height: var(--joy-vvh, 100svh);
+          max-height: var(--joy-vvh, 100svh);
           min-height: 0;
           border-radius: 0;
           box-shadow: none;
@@ -111,9 +113,13 @@
           max-width: 94%;
         }
         .chat-input-bar {
-          padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
+          /* safe-area + thêm khoảng đệm phía trên thanh tab Safari (thường không nằm trong safe-area) */
+          padding-bottom: max(18px, calc(12px + env(safe-area-inset-bottom, 0px) + 10px));
           padding-left: max(16px, env(safe-area-inset-left, 0px));
           padding-right: max(16px, env(safe-area-inset-right, 0px));
+        }
+        .status {
+          padding-bottom: 2px;
         }
         .pre-chat-screen {
           position: fixed;
@@ -688,6 +694,43 @@
         }
       });
 
+      /* Mobile Safari: 100dvh thường cao hơn vùng nhìn thấy → ô chat nằm dưới thanh tab. Đồng bộ theo visualViewport. */
+      function syncMobileJoyHeight() {
+        if (!window.matchMedia("(max-width: 480px)").matches) {
+          document.documentElement.style.removeProperty("--joy-vvh");
+          document.documentElement.style.removeProperty("height");
+          document.body.style.removeProperty("height");
+          document.body.style.removeProperty("max-height");
+          var mc = document.getElementById("mainChat");
+          if (mc) {
+            mc.style.removeProperty("height");
+            mc.style.removeProperty("max-height");
+          }
+          return;
+        }
+        var vv = window.visualViewport;
+        var h = vv ? Math.max(0, Math.round(vv.height)) : window.innerHeight;
+        var px = h + "px";
+        document.documentElement.style.setProperty("--joy-vvh", px);
+        document.documentElement.style.height = px;
+        document.body.style.height = px;
+        document.body.style.maxHeight = px;
+        var main = document.getElementById("mainChat");
+        if (main && window.getComputedStyle(main).display !== "none") {
+          main.style.height = px;
+          main.style.maxHeight = px;
+        }
+      }
+      syncMobileJoyHeight();
+      window.addEventListener("resize", syncMobileJoyHeight);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", syncMobileJoyHeight);
+        window.visualViewport.addEventListener("scroll", syncMobileJoyHeight);
+      }
+      window.addEventListener("orientationchange", function () {
+        setTimeout(syncMobileJoyHeight, 400);
+      });
+
       /* Màn trước chat: bắt buộc Tên + Email. Lần sau (cùng trình duyệt) tự điền lại từ localStorage. */
       const preChatScreen = document.getElementById("preChatScreen");
       const mainChat = document.getElementById("mainChat");
@@ -722,6 +765,7 @@
       function showChat() {
         if (preChatScreen) preChatScreen.classList.add("hidden");
         if (mainChat) mainChat.style.display = "flex";
+        syncMobileJoyHeight();
         updateUserInfoDisplay();
         initChat();
       }
@@ -768,6 +812,8 @@
 
       checkGateAndShow();
       setTimeout(applyPrefillMessage, 300);
+      setTimeout(syncMobileJoyHeight, 50);
+      setTimeout(syncMobileJoyHeight, 500);
     </script>
   </body>
   </html>
