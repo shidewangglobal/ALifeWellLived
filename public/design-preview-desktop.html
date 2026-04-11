@@ -2,30 +2,24 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Preview: Layout desktop – Joy + 2 ô hai bên</title>
+    <title>Joy · A Life Well Lived — Trang chủ</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg-violet-1: #f8f4ff;
-        --bg-violet-2: #ece3ff;
-        --bg-violet-3: #ded0ff;
+        --bg-green: #e8f5e9;
+        --bg-lavender: #f3e8ff;
         --purple-dark: #5b21b6;
-        --purple-mid: #7c3aed;
-        --purple-soft: #ede9fe;
-        --text-dark: #2a1f3a;
-        --text-muted: #6f5b8a;
+        --text-dark: #1f2937;
+        --text-muted: #6b7280;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background:
-          radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.14), transparent 40%),
-          radial-gradient(circle at 80% 10%, rgba(91, 33, 182, 0.12), transparent 42%),
-          linear-gradient(to top right, var(--bg-violet-1) 0%, var(--bg-violet-2) 52%, var(--bg-violet-3) 100%);
+        background: linear-gradient(to top right, var(--bg-green) 0%, #e0f2e9 40%, #ede9fe 70%, var(--bg-lavender) 100%);
         background-attachment: fixed;
         min-height: 100vh;
         display: flex;
@@ -34,23 +28,7 @@
         padding: 24px;
         overflow-x: hidden;
       }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        opacity: 0.18;
-        background-image:
-          repeating-linear-gradient(
-            45deg,
-            rgba(91, 33, 182, 0.06) 0,
-            rgba(91, 33, 182, 0.06) 2px,
-            transparent 2px,
-            transparent 14px
-          );
-      }
 
-      /* 3 cột bằng nhau, chat giữa; toàn bộ fit trong màn hình desktop */
       .desktop-layout {
         display: flex;
         align-items: stretch;
@@ -61,41 +39,11 @@
         height: 85vh;
         max-height: calc(100vh - 48px);
       }
-      .top-nav {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 20;
-        display: flex;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.74);
-        border: 1px solid rgba(91, 33, 182, 0.14);
-        border-radius: 999px;
-        padding: 6px 8px;
-        box-shadow: 0 4px 14px rgba(91, 33, 182, 0.16);
-        backdrop-filter: blur(8px);
-      }
-      .top-nav a {
-        text-decoration: none;
-        color: var(--purple-dark);
-        font-size: 12px;
-        font-weight: 600;
-        padding: 6px 10px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .top-nav a:hover {
-        background: rgba(91, 33, 182, 0.1);
-      }
       .desktop-layout > * {
         flex: 1;
         min-width: 0;
       }
 
-      /* Ô 1: Prysm iO – trong suốt, thấy nền */
       .panel-left {
         display: flex;
         flex-direction: column;
@@ -117,6 +65,9 @@
         color: var(--purple-dark);
         line-height: 1.1;
       }
+      .panel-left h1 .brand-icon {
+        margin-right: 8px;
+      }
       .panel-left .tagline {
         font-family: "Cormorant Garamond", Georgia, serif;
         font-size: clamp(18px, 2vw, 26px);
@@ -129,13 +80,7 @@
         margin: 0;
       }
       .panel-left .tagline .line2 { display: block; }
-      .panel-left .cultural-note {
-        margin-top: 10px;
-        font-size: 12px;
-        color: var(--text-muted);
-      }
 
-      /* Ô 2: Chat Joy – đúng giữa màn hình */
       .panel-center {
         display: flex;
         flex-direction: column;
@@ -162,137 +107,7 @@
         border: none;
         display: block;
       }
-      .panel-center .daily-flow {
-        width: 100%;
-        max-width: 420px;
-        margin-bottom: 12px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        padding: 12px;
-      }
-      .daily-flow h3 {
-        margin: 0 0 10px 0;
-        font-size: 14px;
-        color: var(--purple-dark);
-      }
-      .daily-flow .row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-      .daily-flow label {
-        font-size: 11px;
-        color: var(--text-muted);
-        display: block;
-        margin-bottom: 4px;
-      }
-      .daily-flow select,
-      .daily-flow input {
-        width: 100%;
-        border: 1px solid rgba(91, 33, 182, 0.16);
-        border-radius: 10px;
-        padding: 8px;
-        font-size: 12px;
-        background: #fff;
-      }
-      .daily-flow .actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      .daily-flow button {
-        border: none;
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-      .daily-flow .btn-primary {
-        background: var(--purple-dark);
-        color: #fff;
-      }
-      .daily-flow .btn-secondary {
-        background: rgba(91, 33, 182, 0.1);
-        color: var(--purple-dark);
-      }
-      .daily-result {
-        margin-top: 8px;
-        font-size: 12px;
-        color: var(--text-dark);
-        line-height: 1.45;
-        background: rgba(232, 245, 233, 0.55);
-        border-radius: 10px;
-        padding: 8px;
-      }
-      .legend {
-        margin-top: 6px;
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-      .legend span {
-        font-size: 10px;
-        border-radius: 999px;
-        padding: 2px 8px;
-        color: #fff;
-      }
-      .legend .good { background: #16a34a; }
-      .legend .neutral { background: #6366f1; }
-      .legend .careful { background: #f59e0b; }
-      .legend .risk { background: #dc2626; }
-      .account-card {
-        width: 100%;
-        max-width: 420px;
-        margin-bottom: 10px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        padding: 10px 12px;
-      }
-      .account-card h3 {
-        margin: 0 0 8px 0;
-        font-size: 14px;
-        color: var(--purple-dark);
-      }
-      .section-title-icon { margin-right: 5px; }
-      .account-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-      .account-item {
-        background: rgba(91, 33, 182, 0.08);
-        border-radius: 10px;
-        padding: 8px;
-        font-size: 12px;
-        color: var(--text-dark);
-      }
-      .account-item strong {
-        display: block;
-        font-size: 11px;
-        color: var(--text-muted);
-        margin-bottom: 3px;
-      }
-      .account-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      .account-actions button {
-        border: none;
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-      .btn-outline {
-        background: rgba(91, 33, 182, 0.1);
-        color: var(--purple-dark);
-      }
 
-      /* Ô 3: Collage + Quote; quote ngay dưới viền ô 5; fit trong cột */
       .panel-right {
         display: flex;
         flex-direction: column;
@@ -302,168 +117,6 @@
         background: transparent;
         overflow-y: auto;
         min-height: 0;
-      }
-      .fortune-card {
-        width: 100%;
-        max-width: 320px;
-        background: rgba(255, 255, 255, 0.86);
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        padding: 14px;
-        margin: 0 auto 14px auto;
-        flex-shrink: 0;
-      }
-      .fortune-title {
-        margin: 0 0 10px 0;
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--purple-dark);
-      }
-      .fortune-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-      .fortune-field label {
-        display: block;
-        font-size: 11px;
-        color: var(--text-muted);
-        margin-bottom: 4px;
-      }
-      .fortune-field input {
-        width: 100%;
-        border: 1px solid rgba(91, 33, 182, 0.16);
-        border-radius: 10px;
-        padding: 7px 8px;
-        font-size: 12px;
-      }
-      .fortune-day-result {
-        font-size: 12px;
-        color: var(--text-dark);
-        margin: 4px 0 10px 0;
-      }
-      .fortune-chip {
-        display: inline-block;
-        background: rgba(91, 33, 182, 0.12);
-        color: var(--purple-dark);
-        border-radius: 999px;
-        padding: 2px 8px;
-        font-weight: 600;
-      }
-      .culture-badge {
-        display: inline-block;
-        margin-left: 6px;
-        font-size: 10px;
-        color: #fff;
-        background: linear-gradient(90deg, var(--purple-dark), var(--purple-mid));
-        border-radius: 999px;
-        padding: 2px 7px;
-        vertical-align: middle;
-      }
-      .hour-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-      }
-      .hour-table th, .hour-table td {
-        text-align: left;
-        padding: 5px 4px;
-        border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
-      }
-      .cung-tag {
-        display: inline-block;
-        border-radius: 999px;
-        padding: 2px 8px;
-        font-size: 10px;
-        font-weight: 700;
-        color: #fff;
-      }
-      .cung-dai-an { background: #2563eb; }
-      .cung-luu-lien { background: #7c3aed; }
-      .cung-toc-hy { background: #16a34a; }
-      .cung-xich-khau { background: #ea580c; }
-      .cung-tieu-cat { background: #0d9488; }
-      .cung-khong-vong { background: #dc2626; }
-      .hour-table th {
-        color: var(--text-muted);
-        font-weight: 600;
-      }
-      .telegram-card {
-        width: 100%;
-        max-width: 320px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        padding: 12px;
-        margin: 0 auto 14px auto;
-      }
-      .telegram-card h3 {
-        margin: 0 0 8px 0;
-        font-size: 14px;
-        color: var(--purple-dark);
-      }
-      .telegram-card label {
-        display: block;
-        font-size: 11px;
-        color: var(--text-muted);
-        margin: 6px 0 4px;
-      }
-      .telegram-card input,
-      .telegram-card select {
-        width: 100%;
-        border: 1px solid rgba(91, 33, 182, 0.16);
-        border-radius: 10px;
-        padding: 7px 8px;
-        font-size: 12px;
-      }
-      .telegram-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      .telegram-actions button {
-        border: none;
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-      .tg-btn-primary { background: var(--purple-dark); color: #fff; }
-      .tg-btn-secondary { background: rgba(91, 33, 182, 0.12); color: var(--purple-dark); }
-      .telegram-status {
-        margin-top: 8px;
-        font-size: 11px;
-        color: var(--text-dark);
-        background: rgba(232, 245, 233, 0.55);
-        border-radius: 10px;
-        padding: 7px 8px;
-      }
-      .spiritual-footer {
-        margin-top: 8px;
-        font-size: 11px;
-        color: var(--text-muted);
-        text-align: center;
-        font-style: italic;
-      }
-      .brand-icon {
-        display: inline-flex;
-        width: 28px;
-        height: 28px;
-        margin-right: 8px;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: rgba(91, 33, 182, 0.14);
-      }
-      .viet-pattern {
-        border: 1px dashed rgba(91, 33, 182, 0.2);
-        border-radius: 12px;
-        padding: 7px 8px;
-        margin-top: 8px;
-        font-size: 11px;
-        color: var(--text-muted);
-        text-align: center;
       }
       .collage-container {
         position: relative;
@@ -485,28 +138,17 @@
         object-fit: cover;
         display: block;
       }
-      .collage-item.placeholder {
-        background: linear-gradient(135deg, #e0f2e9 0%, #ede9fe 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        color: var(--text-muted);
-        font-weight: 500;
-      }
-      /* Ô 1: 44%, 78.4%. Ô 2: right 36.4%, top 30%. Ô 5: width = ô 1 (78.4%), cao = ngang (1:1), overlap ô 1&2, z trên cùng; viền phải cách ô 1 là 20%; viền trên cao hơn 40% so với đáy ô 2 */
       .collage-item:nth-child(1) {
         width: 78.4%; aspect-ratio: 0.5769; left: 44%; top: 0; right: auto; bottom: auto; z-index: 1;
       }
       .collage-item:nth-child(2) {
         width: 84.5%; aspect-ratio: 0.9; right: 36.4%; left: auto; top: 30%; bottom: auto; z-index: 2;
-        transform: translateY(-20%); /* dịch lên 1/5 chiều cao của ô */
+        transform: translateY(-20%);
       }
       .collage-item:nth-child(3) {
         width: 78.4%; aspect-ratio: 1; right: -6.7%; left: auto; top: 50.5%; bottom: auto; z-index: 3;
       }
 
-      /* Kéo quote sát dưới ô 5; khung đủ rộng để câu ngắn nằm 1 hàng (vd. "Hành động nhỏ mỗi ngày - sức khoẻ bền lâu") */
       .quote-wrap {
         margin-top: -5.2rem;
         padding-top: 0;
@@ -530,10 +172,8 @@
       }
       .quote-text strong { font-style: normal; color: var(--purple-dark); }
 
-      /* Mobile: chỉ hiện khung chat Joy, full màn hình — seamless */
       @media (max-width: 1023px) {
         body { padding: 0; }
-        .top-nav { display: none; }
         .desktop-layout {
           height: 100vh;
           max-height: none;
@@ -560,149 +200,21 @@
     </style>
   </head>
   <body>
-    <nav class="top-nav">
-      <a href="#account">👤 Tài khoản</a>
-      <a href="#daily">☯️ Tham khảo</a>
-      <a href="#chat">💬 Chat Bot</a>
-      <a href="#calendar">📅 Lịch ngày</a>
-      <a href="#notify">🔔 Thông báo</a>
-    </nav>
     <div class="desktop-layout">
-      <!-- Ô 1: Prysm iO – trong suốt -->
       <aside class="panel-left">
         <div class="brand-wrap">
-          <h1><span class="brand-icon">🪷</span>Prysm iO</h1>
-          <p class="tagline">Lịch vận mỗi ngày<span class="line2">thuận theo nếp Việt</span></p>
-          <p class="cultural-note">Tinh thần âm dương ngũ hành · gợi ý theo bối cảnh đời sống Việt Nam</p>
+          <h1><span class="brand-icon" aria-hidden="true">🪷</span>Prysm iO</h1>
+          <p class="tagline">Nền tảng quản trị<span class="line2">sức khoẻ gia đình</span></p>
         </div>
       </aside>
 
-      <!-- Ô 2: Khung chat Joy – iframe trang chat thật (luôn đúng thiết kế mới nhất) -->
       <main class="panel-center">
-        <section class="account-card" id="account">
-          <h3><span class="section-title-icon">👤</span>Tài khoản & gói sử dụng <span class="culture-badge">Bản Việt</span></h3>
-          <div class="account-grid">
-            <div class="account-item"><strong>Trạng thái user</strong>Đã đăng ký</div>
-            <div class="account-item"><strong>Gói hiện tại</strong>Trial / Premium (tạm)</div>
-            <div class="account-item"><strong>Premium trial</strong>Còn 5 lượt</div>
-            <div class="account-item"><strong>Thanh toán</strong>Sẽ build ở phase sau</div>
-          </div>
-          <div class="account-actions">
-            <button type="button" class="btn-outline" id="btnFakePremium">Bật Premium (demo)</button>
-            <button type="button" class="btn-outline" id="btnBillingLater">Thanh toán (coming soon)</button>
-          </div>
-        </section>
-        <section class="daily-flow" id="daily">
-          <h3><span class="section-title-icon">☯️</span>Tham khảo chuyện hằng ngày <span class="culture-badge">Phong thuỷ ứng dụng</span></h3>
-          <div class="row">
-            <div>
-              <label for="consultTarget">Xem cho</label>
-              <select id="consultTarget">
-                <option value="self">Cho bản thân</option>
-                <option value="other">Cho người khác</option>
-              </select>
-            </div>
-            <div>
-              <label for="hasParticipant">Có người tham gia?</label>
-              <select id="hasParticipant">
-                <option value="no">Không</option>
-                <option value="yes">Có</option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div>
-              <label for="consultTopic">Chủ đề</label>
-              <select id="consultTopic">
-                <option value="general">Hằng ngày</option>
-                <option value="business">Làm ăn / kinh doanh</option>
-                <option value="real_estate">Mua đất / bất động sản</option>
-                <option value="marriage">Cưới xin / tình cảm</option>
-                <option value="ancestral">Gia đạo / hương hoả</option>
-              </select>
-            </div>
-            <div>
-              <label for="participantRole">Vai trò người tham gia</label>
-              <input id="participantRole" type="text" placeholder="Ví dụ: khách hàng, người thân..." disabled />
-            </div>
-          </div>
-          <div class="actions">
-            <button class="btn-primary" id="btnPreviewDaily" type="button">Xem nhanh trong ngày</button>
-            <button class="btn-secondary" id="btnAskBot" type="button">Hỏi thêm với Bot</button>
-          </div>
-          <div id="dailyResult" class="daily-result">
-            Chọn thông tin ở trên rồi bấm "Xem nhanh trong ngày".
-          </div>
-          <div class="legend">
-            <span class="good">Thuận lợi</span>
-            <span class="neutral">Ổn định</span>
-            <span class="careful">Cần lưu ý</span>
-            <span class="risk">Nên tránh</span>
-          </div>
-        </section>
-        <div class="chat-placeholder" id="chat">
-          <iframe id="chatFrame" src="/chat" title="Joy chat"></iframe>
+        <div class="chat-placeholder">
+          <iframe src="/chat" title="Joy chat"></iframe>
         </div>
       </main>
 
-      <!-- Ô 3: Collage + Quote – trong suốt, collage giữa phần phải -->
       <aside class="panel-right">
-        <section class="fortune-card" id="calendar">
-          <h3 class="fortune-title"><span class="section-title-icon">📜</span>Lịch Lục Nhâm trong ngày <span class="culture-badge">Cổ pháp Việt hoá</span></h3>
-          <div class="fortune-grid">
-            <div class="fortune-field" style="grid-column: span 3;">
-              <label for="solarDateInput">Ngày dương lịch</label>
-              <input id="solarDateInput" type="date" />
-            </div>
-            <div class="fortune-field">
-              <label for="lunarMonthInput">Tháng âm</label>
-              <input id="lunarMonthInput" type="number" min="1" max="12" value="1" />
-            </div>
-            <div class="fortune-field">
-              <label for="lunarDayInput">Ngày âm</label>
-              <input id="lunarDayInput" type="number" min="1" max="30" value="1" />
-            </div>
-            <div class="fortune-field">
-              <label for="lunarLeapInput">Nhuận?</label>
-              <input id="lunarLeapInput" type="text" value="Không" readonly />
-            </div>
-          </div>
-          <div id="dayCungResult" class="fortune-day-result">Ngày này thuộc cung: <span class="fortune-chip">Đại An</span></div>
-          <div class="viet-pattern">Gợi ý theo nếp Việt: xem giờ lành trước khi quyết việc lớn trong gia đạo và làm ăn.</div>
-          <table class="hour-table">
-            <thead>
-              <tr>
-                <th>Canh giờ</th>
-                <th>Khung 24h</th>
-                <th>Cung</th>
-              </tr>
-            </thead>
-            <tbody id="hourRows"></tbody>
-          </table>
-        </section>
-        <section class="telegram-card" id="notify">
-          <h3><span class="section-title-icon">🔔</span>Nhận thông báo qua Telegram</h3>
-          <label for="tgChatId">Telegram chat_id</label>
-          <input id="tgChatId" type="text" placeholder="Ví dụ: 123456789" />
-          <label for="tgTopic">Chủ đề ưu tiên</label>
-          <select id="tgTopic">
-            <option value="general">Hằng ngày</option>
-            <option value="business">Kinh doanh</option>
-            <option value="real_estate">Bất động sản</option>
-            <option value="marriage">Cưới xin</option>
-            <option value="ancestral">Gia đạo</option>
-            <option value="legal">Pháp lý</option>
-            <option value="travel">Di chuyển</option>
-          </select>
-          <label for="tgTime">Giờ nhận mỗi ngày (HH:MM)</label>
-          <input id="tgTime" type="text" value="06:30" placeholder="06:30" />
-          <div class="telegram-actions">
-            <button id="tgTestBtn" class="tg-btn-secondary" type="button">Gửi test</button>
-            <button id="tgSaveBtn" class="tg-btn-primary" type="button">Đăng ký nhận</button>
-          </div>
-          <div id="tgStatus" class="telegram-status">Telegram-first: nhập chat_id để bắt đầu.</div>
-          <div class="spiritual-footer">"An tâm trước việc lớn, thuận giờ cho việc lành"</div>
-        </section>
         <div class="collage-container">
           <div class="collage-item"><img src="assets/bg-newsletter-c0675bae-d542-4a23-bd85-254ecd85935a.png" alt="" /></div>
           <div class="collage-item"><img src="assets/611742355_903201375604417_6593739724152076174_n-401cefd0-06d3-4411-9b4f-9898088af05b.png" alt="" /></div>
@@ -718,241 +230,32 @@
       var quotes = [
         "Hành động nhỏ mỗi ngày — sức khoẻ bền lâu.",
         "Sống chất là chọn điều có ý nghĩa, mỗi ngày.",
-        "Bước đầu tiên luôn là bước quan trọng nhất."
+        "Bước đầu tiên luôn là bước quan trọng nhất.",
+        "Gia đình khoẻ là nền tảng của mọi thành công.",
+        "Chăm sóc bản thân không phải ích kỷ — đó là trách nhiệm.",
+        "Mỗi ngày một thay đổi nhỏ, một năm sau là cả hành trình.",
+        "Sức khoẻ không phải tất cả, nhưng không có nó ta chẳng có gì.",
+        "Bắt đầu từ hôm nay — không cần hoàn hảo, chỉ cần bắt đầu.",
+        "Động lực đưa bạn đi, thói quen giữ bạn lại.",
+        "Yêu thương gia đình bắt đầu từ việc chăm sóc chính mình.",
+        "Sức khoẻ tinh thần và thể chất đi cùng nhau — hãy nuôi cả hai.",
+        "Không có \"đủ thời gian\", chỉ có \"ưu tiên đúng\".",
+        "Một cơ thể khoẻ là khách sạn; một cơ thể yếu là nhà tù.",
+        "Đầu tư vào sức khoẻ hôm nay, tận hưởng ngày mai.",
+        "Thay đổi nhỏ, kiên trì mỗi ngày — đó là bí quyết.",
+        "Gia đình là nơi ta bắt đầu và là nơi ta luôn quay về.",
+        "Hãy là phiên bản khoẻ mạnh nhất của chính bạn.",
+        "Không chờ \"đúng lúc\" — đúng lúc là khi bạn bắt đầu.",
+        "Sống có chủ đích từng ngày, không chỉ tồn tại.",
+        "Sức khoẻ gia đình bắt đầu từ từng thành viên — bắt đầu từ bạn."
       ];
       var el = document.getElementById("quoteDisplay");
       if (el) {
-        var shortQuotes = quotes.filter(function (s) { return s.length <= 50; });
+        var shortQuotes = quotes.filter(function (s) { return s.length <= 52; });
         var pool = shortQuotes.length ? shortQuotes : quotes;
         var q = pool[Math.floor(Math.random() * pool.length)];
         el.textContent = '"' + q + '"';
       }
-
-      var CUNGS = ["Đại An", "Lưu Liên", "Tốc Hỷ", "Xích Khẩu", "Tiểu Cát", "Không Vong"];
-      var HOUR_BRANCHES = [
-        { name: "Tý", range: "23:00 - 00:59" },
-        { name: "Sửu", range: "01:00 - 02:59" },
-        { name: "Dần", range: "03:00 - 04:59" },
-        { name: "Mão", range: "05:00 - 06:59" },
-        { name: "Thìn", range: "07:00 - 08:59" },
-        { name: "Tỵ", range: "09:00 - 10:59" },
-        { name: "Ngọ", range: "11:00 - 12:59" },
-        { name: "Mùi", range: "13:00 - 14:59" },
-        { name: "Thân", range: "15:00 - 16:59" },
-        { name: "Dậu", range: "17:00 - 18:59" },
-        { name: "Tuất", range: "19:00 - 20:59" },
-        { name: "Hợi", range: "21:00 - 22:59" }
-      ];
-
-      function getMonthCungIndex(lunarMonth) {
-        return ((lunarMonth - 1) % 6 + 6) % 6;
-      }
-
-      function getDayCungIndex(monthCungIndex, lunarDay) {
-        return (monthCungIndex + lunarDay - 1) % 6;
-      }
-
-      function renderFortuneDay() {
-        var solarInput = document.getElementById("solarDateInput");
-        var lunarMonthInput = document.getElementById("lunarMonthInput");
-        var lunarDayInput = document.getElementById("lunarDayInput");
-        var dayCungResult = document.getElementById("dayCungResult");
-        var hourRows = document.getElementById("hourRows");
-        if (!solarInput || !lunarMonthInput || !lunarDayInput || !dayCungResult || !hourRows) return;
-
-        var lunarMonth = parseInt(lunarMonthInput.value, 10);
-        var lunarDay = parseInt(lunarDayInput.value, 10);
-        if (!lunarMonth || lunarMonth < 1 || lunarMonth > 12) lunarMonth = 1;
-        if (!lunarDay || lunarDay < 1 || lunarDay > 30) lunarDay = 1;
-
-        var monthCungIndex = getMonthCungIndex(lunarMonth);
-        var dayCungIndex = getDayCungIndex(monthCungIndex, lunarDay);
-        dayCungResult.innerHTML = 'Ngày này thuộc cung: <span class="fortune-chip">' + CUNGS[dayCungIndex] + "</span>";
-
-        hourRows.innerHTML = "";
-        for (var i = 0; i < HOUR_BRANCHES.length; i++) {
-          var hourCung = CUNGS[(dayCungIndex + i) % 6];
-          var cls = "cung-dai-an";
-          if (hourCung === "Lưu Liên") cls = "cung-luu-lien";
-          else if (hourCung === "Tốc Hỷ") cls = "cung-toc-hy";
-          else if (hourCung === "Xích Khẩu") cls = "cung-xich-khau";
-          else if (hourCung === "Tiểu Cát") cls = "cung-tieu-cat";
-          else if (hourCung === "Không Vong") cls = "cung-khong-vong";
-          var tr = document.createElement("tr");
-          tr.innerHTML =
-            "<td>" + HOUR_BRANCHES[i].name + "</td>" +
-            "<td>" + HOUR_BRANCHES[i].range + "</td>" +
-            '<td><span class="cung-tag ' + cls + '">' + hourCung + "</span></td>";
-          hourRows.appendChild(tr);
-        }
-      }
-
-      function buildDailySummary() {
-        var targetEl = document.getElementById("consultTarget");
-        var participantEl = document.getElementById("hasParticipant");
-        var topicEl = document.getElementById("consultTopic");
-        var roleEl = document.getElementById("participantRole");
-        var dayCungResult = document.getElementById("dayCungResult");
-        var dailyResult = document.getElementById("dailyResult");
-        if (!targetEl || !participantEl || !topicEl || !roleEl || !dayCungResult || !dailyResult) return "";
-
-        var dayCungText = dayCungResult.textContent.replace("Ngày này thuộc cung:", "").trim();
-        var targetText = targetEl.value === "self" ? "bản thân" : "người khác";
-        var hasParticipant = participantEl.value === "yes";
-        var topicMap = {
-          general: "chuyện hằng ngày",
-          business: "làm ăn/kinh doanh",
-          real_estate: "mua đất/bất động sản",
-          marriage: "cưới xin/tình cảm",
-          ancestral: "gia đạo/hương hoả"
-        };
-        var topicText = topicMap[topicEl.value] || "chuyện hằng ngày";
-        var participantRole = (roleEl.value || "").trim();
-
-        var lines = [];
-        lines.push("Bạn đang xem cho: " + targetText + ".");
-        lines.push("Chủ đề: " + topicText + ".");
-        lines.push("Cung ngày hiện tại: " + dayCungText + ".");
-        if (hasParticipant) {
-          lines.push("Có người tham gia: " + (participantRole || "có người liên quan"));
-        } else {
-          lines.push("Không có người tham gia thêm.");
-        }
-        lines.push("Bạn có thể bấm 'Hỏi thêm với Bot' để nhận tư vấn chi tiết theo tình huống.");
-
-        dailyResult.textContent = lines.join(" ");
-        return lines.join(" ");
-      }
-
-      function sendDailyContextToChat() {
-        var summary = buildDailySummary();
-        if (!summary) return;
-        try {
-          localStorage.setItem("joy_prefill_message", "Nhờ bạn tư vấn sâu hơn dựa trên bối cảnh này: " + summary);
-        } catch (e) {}
-        var chatFrame = document.getElementById("chatFrame");
-        if (chatFrame) {
-          chatFrame.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }
-
-      (function initFortuneWidget() {
-        var solarInput = document.getElementById("solarDateInput");
-        var lunarMonthInput = document.getElementById("lunarMonthInput");
-        var lunarDayInput = document.getElementById("lunarDayInput");
-        if (solarInput) {
-          var now = new Date();
-          var yyyy = now.getFullYear();
-          var mm = String(now.getMonth() + 1).padStart(2, "0");
-          var dd = String(now.getDate()).padStart(2, "0");
-          solarInput.value = yyyy + "-" + mm + "-" + dd;
-        }
-        if (lunarMonthInput && !lunarMonthInput.value) lunarMonthInput.value = "1";
-        if (lunarDayInput && !lunarDayInput.value) lunarDayInput.value = "1";
-
-        [solarInput, lunarMonthInput, lunarDayInput].forEach(function (el) {
-          if (el) el.addEventListener("input", renderFortuneDay);
-        });
-
-        renderFortuneDay();
-
-        var consultTarget = document.getElementById("consultTarget");
-        var hasParticipant = document.getElementById("hasParticipant");
-        var consultTopic = document.getElementById("consultTopic");
-        var participantRole = document.getElementById("participantRole");
-        var btnPreviewDaily = document.getElementById("btnPreviewDaily");
-        var btnAskBot = document.getElementById("btnAskBot");
-        var btnFakePremium = document.getElementById("btnFakePremium");
-        var btnBillingLater = document.getElementById("btnBillingLater");
-
-        if (hasParticipant && participantRole) {
-          hasParticipant.addEventListener("change", function () {
-            var enabled = hasParticipant.value === "yes";
-            participantRole.disabled = !enabled;
-            if (!enabled) participantRole.value = "";
-          });
-        }
-
-        [consultTarget, hasParticipant, consultTopic, participantRole].forEach(function (el) {
-          if (el) el.addEventListener("input", buildDailySummary);
-        });
-        if (btnPreviewDaily) btnPreviewDaily.addEventListener("click", buildDailySummary);
-        if (btnAskBot) btnAskBot.addEventListener("click", sendDailyContextToChat);
-        if (btnFakePremium) {
-          btnFakePremium.addEventListener("click", function () {
-            var dailyResult = document.getElementById("dailyResult");
-            if (dailyResult) {
-              dailyResult.textContent = "Đang dùng Premium (demo). Tính năng thanh toán thật sẽ được mở ở phase sau.";
-            }
-          });
-        }
-        if (btnBillingLater) {
-          btnBillingLater.addEventListener("click", function () {
-            var dailyResult = document.getElementById("dailyResult");
-            if (dailyResult) {
-              dailyResult.textContent = "Thanh toán chưa bật. Hiện tại hệ thống đang chạy bản demo để hoàn thiện giao diện và luồng trải nghiệm.";
-            }
-          });
-        }
-
-        var tgChatId = document.getElementById("tgChatId");
-        var tgTopic = document.getElementById("tgTopic");
-        var tgTime = document.getElementById("tgTime");
-        var tgTestBtn = document.getElementById("tgTestBtn");
-        var tgSaveBtn = document.getElementById("tgSaveBtn");
-        var tgStatus = document.getElementById("tgStatus");
-
-        function setTgStatus(text) {
-          if (tgStatus) tgStatus.textContent = text;
-        }
-
-        async function tgPost(url, payload) {
-          var res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload || {})
-          });
-          var data = await res.json();
-          if (!res.ok) throw new Error(data && data.error ? data.error : "Request failed");
-          return data;
-        }
-
-        async function onTelegramTest() {
-          var chatId = tgChatId && tgChatId.value ? tgChatId.value.trim() : "";
-          if (!chatId) return setTgStatus("Vui lòng nhập chat_id trước.");
-          try {
-            setTgStatus("Đang gửi test...");
-            await tgPost("/api/telegram/test-send", {
-              chat_id: chatId,
-              text: "Joy test: ket noi Telegram thanh cong."
-            });
-            setTgStatus("Đã gửi test thành công.");
-          } catch (e) {
-            setTgStatus("Gửi test lỗi: " + (e && e.message ? e.message : "Unknown error"));
-          }
-        }
-
-        async function onTelegramSave() {
-          var chatId = tgChatId && tgChatId.value ? tgChatId.value.trim() : "";
-          if (!chatId) return setTgStatus("Vui lòng nhập chat_id trước.");
-          try {
-            setTgStatus("Đang lưu đăng ký...");
-            await tgPost("/api/telegram/subscriptions", {
-              chat_id: chatId,
-              topic: tgTopic && tgTopic.value ? tgTopic.value : "general",
-              delivery_time: tgTime && tgTime.value ? tgTime.value.trim() : "06:30",
-              timezone: "Asia/Ho_Chi_Minh",
-              active: true
-            });
-            setTgStatus("Đăng ký thành công. Hệ thống sẽ gửi theo giờ bạn chọn.");
-          } catch (e) {
-            setTgStatus("Lưu đăng ký lỗi: " + (e && e.message ? e.message : "Unknown error"));
-          }
-        }
-
-        if (tgTestBtn) tgTestBtn.addEventListener("click", onTelegramTest);
-        if (tgSaveBtn) tgSaveBtn.addEventListener("click", onTelegramSave);
-      })();
     </script>
   </body>
 </html>
